@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     View,
     Text,
@@ -8,31 +8,55 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    Keyboard,
+    TouchableWithoutFeedback,
+    ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import InputComponent from "../components/InputComponent"; // Common input component
-import loginIntersection from "../assets/images/loginIntersection/loginIntersection.png";
+import InputComponent from "../components/InputComponent";
+import { useNavigation } from "@react-navigation/native";
+import { loginIntersection } from "../assets/images";
+import { initializeApp } from "firebase/app";
 
 const LoginScreen = () => {
+    const navigation = useNavigation();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [errors, setErrors] = useState({ email: "", password: "" });
+    const [errors, setErrors] = useState({});
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = () => {
-        let isValid = true;
+    const validateInputs = () => {
+        const newErrors = {};
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         if (!email) {
-            setErrors((prev) => ({ ...prev, email: "Email is required" }));
-            isValid = false;
-        }
-        if (!password) {
-            setErrors((prev) => ({ ...prev, password: "Password is required" }));
-            isValid = false;
+            newErrors.email = "Email is required.";
+        } else if (!emailRegex.test(email)) {
+            newErrors.email = "Enter a valid email address.";
         }
 
-        if (isValid) {
-            console.log("Login Successful", { email, password });
+        if (!password) {
+            newErrors.password = "Password is required.";
+        } else if (password.length < 6) {
+            newErrors.password = "Password must be at least 6 characters.";
         }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleLogin = () => {
+        if (validateInputs()) {
+            setLoading(true);
+            setTimeout(() => {
+                setLoading(false);
+                console.log("Login Successful", { email, password });
+            }, 2000);
+        }
+    };
+
+    const handleLoginWithOtp = () => {
+        navigation.navigate("OtpLoginScreen");
     };
 
     const handleForgotPassword = () => {
@@ -40,7 +64,7 @@ const LoginScreen = () => {
     };
 
     const handleSignup = () => {
-        console.log("Sign Up pressed");
+        navigation.navigate("RegisterScreen");
     };
 
     return (
@@ -49,52 +73,65 @@ const LoginScreen = () => {
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
                 style={{ flex: 1 }}
             >
-                <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                    <View style={styles.imageContainer}>
-                        <Image source={loginIntersection} style={styles.image} />
-                        <Text style={styles.loginText}>Login</Text>
-                    </View>
-
-                    <View style={styles.formContainer}>
-                        <InputComponent
-                            label="Email"
-                            placeholder="Enter your email"
-                            value={email}
-                            onChangeText={(text) => {
-                                setEmail(text);
-                                setErrors((prev) => ({ ...prev, email: "" }));
-                            }}
-                            keyboardType="email-address"
-                            errorMessage={errors.email}
-                            iconName="email" // Add email icon
-                        />
-                        <InputComponent
-                            label="Password"
-                            placeholder="Enter your password"
-                            value={password}
-                            onChangeText={(text) => {
-                                setPassword(text);
-                                setErrors((prev) => ({ ...prev, password: "" }));
-                            }}
-                            secureTextEntry
-                            errorMessage={errors.password}
-                            iconName="lock" // Add password icon
-                        />
-
-                        <Pressable onPress={handleForgotPassword} style={styles.forgotPassword}>
-                            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                        </Pressable>
-                        <Pressable style={styles.button} onPress={handleLogin}>
-                            <Text style={styles.buttonText}>Login</Text>
-                        </Pressable>
-                        <View style={styles.signupContainer}>
-                            <Text style={styles.signupText}>Don't have an account?</Text>
-                            <Pressable onPress={handleSignup}>
-                                <Text style={styles.signupLink}> Sign Up</Text>
-                            </Pressable>
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+                        <View style={styles.imageContainer}>
+                            <Image source={loginIntersection} style={styles.image} />
                         </View>
-                    </View>
-                </ScrollView>
+
+                        <View style={styles.formContainer}>
+                            <Text style={styles.title}>Welcome Back!</Text>
+                            <Text style={styles.subtitle}>
+                                Log in to connect and chat with your friends seamlessly.
+                            </Text>
+
+                            <InputComponent
+                                label="Email Address"
+                                value={email}
+                                onChangeText={(text) => {
+                                    setEmail(text);
+                                    setErrors((prev) => ({ ...prev, email: "" }));
+                                }}
+                                iconName="email"
+                                errorMessage={errors.email}
+                            />
+
+                            <InputComponent
+                                label="Password"
+                                value={password}
+                                onChangeText={(text) => {
+                                    setPassword(text);
+                                    setErrors((prev) => ({ ...prev, password: "" }));
+                                }}
+                                secureTextEntry
+                                errorMessage={errors.password}
+                                iconName="lock"
+                            />
+
+                            <Pressable onPress={handleForgotPassword} style={styles.forgotPassword}>
+                                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                            </Pressable>
+                            <Pressable
+                                style={[styles.button, loading && styles.disabledButton]}
+                                onPress={handleLogin}
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator color="#fff" />
+                                ) : (
+                                    <Text style={styles.buttonText}>Login</Text>
+                                )}
+                            </Pressable>
+
+                            <View style={styles.signupContainer}>
+                                <Text style={styles.signupText}>Don’t have an account?</Text>
+                                <Pressable onPress={handleSignup}>
+                                    <Text style={styles.signupLink}> Sign Up</Text>
+                                </Pressable>
+                            </View>
+                        </View>
+                    </ScrollView>
+                </TouchableWithoutFeedback>
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
@@ -105,26 +142,33 @@ export default LoginScreen;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#fff",
+        backgroundColor: "#f9f9f9",
     },
     imageContainer: {
         alignItems: "center",
         marginVertical: 20,
     },
     image: {
-        width: 200,
-        height: 200,
+        width: 250,
+        height: 250,
         resizeMode: "contain",
-    },
-    loginText: {
-        fontSize: 24,
-        color: "black",
-        fontWeight: "bold",
-        marginTop: 10,
     },
     formContainer: {
         flex: 1,
         paddingHorizontal: 20,
+    },
+    title: {
+        fontSize: 28,
+        fontWeight: "bold",
+        color: "#333",
+        textAlign: "center",
+        marginBottom: 10,
+    },
+    subtitle: {
+        fontSize: 16,
+        color: "#666",
+        textAlign: "center",
+        marginBottom: 20,
     },
     forgotPassword: {
         alignSelf: "flex-end",
@@ -138,9 +182,19 @@ const styles = StyleSheet.create({
     button: {
         backgroundColor: "#4a90e2",
         padding: 15,
-        borderRadius: 8,
+        borderRadius: 25,
         alignItems: "center",
         marginBottom: 20,
+        shadowColor: "#000",
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        shadowOffset: { width: 0, height: 5 },
+    },
+    disabledButton: {
+        backgroundColor: "#a0c4e2",
+    },
+    otpButton: {
+        backgroundColor: "#FFA726", 
     },
     buttonText: {
         color: "white",
@@ -161,8 +215,16 @@ const styles = StyleSheet.create({
         color: "#4a90e2",
         fontWeight: "600",
     },
+    googleButton: {
+        backgroundColor: "#db4a39",
+        padding: 15,
+        borderRadius: 25,
+        alignItems: "center",
+        marginBottom: 20,
+    },
+    googleButtonText: {
+        color: "white",
+        fontSize: 16,
+        fontWeight: "bold",
+    },
 });
-
-
-
-// import loginIntersection from '../assets/images/loginIntersection/loginIntersection.png'

@@ -12,6 +12,7 @@ import { SafeAreaView, Text } from 'react-native';
 import SplashScreen from '../screens/SplashScreen'
 import LoginScreen from '../screens/LoginScreen'
 import RegisterScreen from '../screens/RegisterScreen'
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -52,13 +53,21 @@ const Routes = () => {
     const [isSplashDone, setIsSplashDone] = useState(false);
 
     useEffect(() => {
-        setTimeout(() => {
-            const userLoggedIn = false;
-            setIsLoggedIn(userLoggedIn);
+        setTimeout(async () => {
+            try {
+                const token = await AsyncStorage.getItem('idToken');
+                if (token) {
+                    setIsLoggedIn(true);
+                } else {
+                    setIsLoggedIn(false);
+                }
+            } catch (error) {
+                console.error("Error checking login status:", error);
+                setIsLoggedIn(false);
+            }
             setIsSplashDone(true);
-        }, 5000);
+        }, 5000); 
     }, []);
-
     if (!isSplashDone) {
         return <SplashScreen />;
     }
@@ -69,17 +78,17 @@ const Routes = () => {
                 {isLoggedIn === null ? (
                     <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }} />
                 ) : isLoggedIn === false ? (
-                    <>
-                        <Stack.Screen
-                            name="Login"
-                            component={LoginScreen}
-                            options={{ title: 'Login', headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="Register"
+                        <>
+                            <Stack.Screen
+                                name="RegisterScreen"
                             component={RegisterScreen}
                             options={{ title: 'Register', headerShown: false }}
                         />
+                            <Stack.Screen
+                                name="LoginScreen"
+                                component={LoginScreen}
+                                options={{ title: 'Login', headerShown: false }}
+                            />
                     </>
                 ) : (
                     <>
