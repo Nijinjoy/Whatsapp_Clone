@@ -8,10 +8,9 @@ import SettingScreen from '../screens/SettingScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import CallScreen from '../screens/CallScreen';
 import ChatlistScreen from '../screens/ChatlistScreen';
-import { SafeAreaView, Text } from 'react-native';
-import SplashScreen from '../screens/SplashScreen'
-import LoginScreen from '../screens/LoginScreen'
-import RegisterScreen from '../screens/RegisterScreen'
+import SplashScreen from '../screens/SplashScreen';
+import LoginScreen from '../screens/LoginScreen';
+import RegisterScreen from '../screens/RegisterScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Tab = createBottomTabNavigator();
@@ -24,13 +23,13 @@ const BottomTabs = () => {
                 tabBarIcon: ({ color, size }) => {
                     let iconName;
 
-                    if (route.name === 'Chatlist') {
+                    if (route.name === 'ChatlistScreen') {
                         iconName = 'chat';
                     } else if (route.name === 'Settings') {
                         iconName = 'settings';
                     } else if (route.name === 'Profile') {
                         iconName = 'person';
-                    } else if (route.name === 'CallScreen') {
+                    } else if (route.name === 'Calls') {
                         iconName = 'phone-in-talk';
                     }
                     return <MaterialIcons name={iconName} size={size} color={color} />;
@@ -38,11 +37,18 @@ const BottomTabs = () => {
                 tabBarActiveTintColor: 'tomato',
                 tabBarInactiveTintColor: 'gray',
                 headerShown: false,
+                tabBarStyle: {
+                    height: 65,
+                    paddingTop: 5,
+                },
+                tabBarLabelStyle: {
+                    fontSize: 12,
+                },
             })}
         >
-            <Tab.Screen name="Chatlist" component={ChatlistScreen} />
+            <Tab.Screen name="ChatlistScreen" component={ChatlistScreen} />
             <Tab.Screen name="Settings" component={SettingScreen} />
-            <Tab.Screen name="CallScreen" component={CallScreen} />
+            <Tab.Screen name="Calls" component={CallScreen} />
             <Tab.Screen name="Profile" component={ProfileScreen} />
         </Tab.Navigator>
     );
@@ -50,24 +56,30 @@ const BottomTabs = () => {
 
 const Routes = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(null);
-    const [isSplashDone, setIsSplashDone] = useState(false);
+    const [isSplashDone, setIsSplashDone] = useState(false); 
 
     useEffect(() => {
-        setTimeout(async () => {
+        const checkLoginStatus = async () => {
             try {
                 const token = await AsyncStorage.getItem('idToken');
                 if (token) {
-                    setIsLoggedIn(true);
+                    setIsLoggedIn(true); // User is logged in
                 } else {
-                    setIsLoggedIn(false);
+                    setIsLoggedIn(false); // User is not logged in
                 }
             } catch (error) {
                 console.error("Error checking login status:", error);
                 setIsLoggedIn(false);
             }
-            setIsSplashDone(true);
-        }, 5000); 
+            // Give a slight delay before finishing the splash screen
+            setTimeout(() => {
+                setIsSplashDone(true); // Finish splash screen after checking the status
+            }, 2000); // Adjust this delay to control how long the splash screen stays visible
+        };
+
+        checkLoginStatus();
     }, []);
+
     if (!isSplashDone) {
         return <SplashScreen />;
     }
@@ -75,59 +87,31 @@ const Routes = () => {
     return (
         <NavigationContainer>
             <Stack.Navigator>
-                {isLoggedIn === null ? (
-                    <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }} />
-                ) : isLoggedIn === false ? (
-                        <>
-                            <Stack.Screen
-                                name="RegisterScreen"
-                            component={RegisterScreen}
-                            options={{ title: 'Register', headerShown: false }}
-                        />
-                            <Stack.Screen
-                                name="LoginScreen"
-                                component={LoginScreen}
-                                options={{ title: 'Login', headerShown: false }}
-                            />
-                    </>
-                ) : (
+                {isLoggedIn === false ? (
                     <>
                         <Stack.Screen
-                            name="Tabs"
-                            component={BottomTabs}
+                            name="RegisterScreen"
+                            component={RegisterScreen}
                             options={{ headerShown: false }}
                         />
                         <Stack.Screen
-                            name="ChatScreen"
-                            component={ChatScreen}
-                            options={{
-                                title: 'Chat',
-                                headerStyle: { backgroundColor: '#6200ee' },
-                                headerTintColor: '#fff',
-                                headerTitleStyle: { fontWeight: 'bold' },
-                            }}
-                        />
-                        <Stack.Screen
-                            name="SettingScreen"
-                            component={SettingScreen}
-                            options={{
-                                title: 'Settings',
-                                headerStyle: { backgroundColor: '#6200ee' },
-                                headerTintColor: '#fff',
-                                headerTitleStyle: { fontWeight: 'bold' },
-                            }}
-                        />
-                        <Stack.Screen
-                            name="ChatlistScreen"
-                            component={ChatlistScreen}
-                            options={{
-                                title: 'Chatlist',
-                                headerStyle: { backgroundColor: '#6200ee' },
-                                headerTintColor: '#fff',
-                                headerTitleStyle: { fontWeight: 'bold' },
-                            }}
+                            name="LoginScreen"
+                            component={LoginScreen}
+                            options={{ headerShown: false }}
                         />
                     </>
+                ) : isLoggedIn === true ? (
+                    <Stack.Screen
+                        name="Tabs"
+                        component={BottomTabs}
+                        options={{ headerShown: false }}
+                    />
+                    ) : (
+                        <Stack.Screen
+                                name="Splash"
+                                component={SplashScreen}
+                                options={{ headerShown: false }}
+                            />
                 )}
             </Stack.Navigator>
         </NavigationContainer>
