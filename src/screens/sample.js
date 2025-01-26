@@ -1,135 +1,182 @@
-// RegisterScreen.js
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, Pressable, TouchableWithoutFeedback, Keyboard, ActivityIndicator, Alert } from 'react-native';
-import React, { useState } from 'react';
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
-import { registerIntersection } from '../assets/images';
-import InputComponent from "../components/InputComponent";
-import ButtonComponent from "../components/ButtonComponent";
-import { getFirebaseApp } from '../utils/firebaseHelper';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
+import React from 'react';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { Swipeable } from 'react-native-gesture-handler';
 
-const RegisterScreen = () => {
-    const navigation = useNavigation();
-    const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
-    const [errors, setErrors] = useState({});
-    const [isLoading, setIsLoading] = useState(false);
+const chatData = [
+    {
+        id: '1',
+        name: 'John Doe',
+        lastMessage: 'Hey, how are you?',
+        time: '12:30 PM',
+        avatar: 'https://via.placeholder.com/50',
+    },
+    {
+        id: '2',
+        name: 'Jane Smith',
+        lastMessage: 'Let’s catch up tomorrow.',
+        time: '11:45 AM',
+        avatar: 'https://via.placeholder.com/50',
+    },
+    {
+        id: '3',
+        name: 'Alex Johnson',
+        lastMessage: 'Got it. Thanks!',
+        time: '10:15 AM',
+        avatar: 'https://via.placeholder.com/50',
+    },
+    {
+        id: '3',
+        name: 'Alex Johnson',
+        lastMessage: 'Got it. Thanks!',
+        time: '10:15 AM',
+        avatar: 'https://via.placeholder.com/50',
+    },
+    {
+        id: '3',
+        name: 'Alex Johnson',
+        lastMessage: 'Got it. Thanks!',
+        time: '10:15 AM',
+        avatar: 'https://via.placeholder.com/50',
+    },
+    {
+        id: '3',
+        name: 'Alex Johnson',
+        lastMessage: 'Got it. Thanks!',
+        time: '10:15 AM',
+        avatar: 'https://via.placeholder.com/50',
+    },
+    {
+        id: '3',
+        name: 'Alex Johnson',
+        lastMessage: 'Got it. Thanks!',
+        time: '10:15 AM',
+        avatar: 'https://via.placeholder.com/50',
+    },
+    {
+        id: '3',
+        name: 'Alex Johnson',
+        lastMessage: 'Got it. Thanks!',
+        time: '10:15 AM',
+        avatar: 'https://via.placeholder.com/50',
+    },
+    {
+        id: '3',
+        name: 'Alex Johnson',
+        lastMessage: 'Got it. Thanks!',
+        time: '10:15 AM',
+        avatar: 'https://via.placeholder.com/50',
+    },
+    {
+        id: '3',
+        name: 'Alex Johnson',
+        lastMessage: 'Got it. Thanks!',
+        time: '10:15 AM',
+        avatar: 'https://via.placeholder.com/50',
+    },
+];
 
-    const app = getFirebaseApp();
-    const auth = getAuth(app);
+const ChatlistScreen = ({ navigation }) => {
 
-    const handleChange = (field, value) => {
-        setForm((prev) => ({ ...prev, [field]: value }));
-        setErrors((prev) => ({ ...prev, [field]: "" }));
+    const handleChatNavigation = (chat) => {
+        navigation.navigate('ChatScreen', { chat });
     };
 
-    const validateForm = () => {
-        const newErrors = {};
-        if (!form.name.trim()) newErrors.name = "Name is required";
-        if (!form.email.trim()) newErrors.email = "Email is required";
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = "Invalid email address";
-        if (!form.phone.trim()) newErrors.phone = "Phone number is required";
-        else if (!/^\d{10}$/.test(form.phone)) newErrors.phone = "Phone number must be 10 digits";
-        if (!form.password.trim()) newErrors.password = "Password is required";
-        else if (form.password.length < 6) newErrors.password = "Password must be at least 6 characters";
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const handleRegister = async () => {
-        if (!validateForm()) return;  // Check if the form is valid
-        setIsLoading(true);
-        try {
-            const userCredential = await createUserWithEmailAndPassword(auth, form.email, form.password);
-            console.log("Registration Successful:", userCredential);
-
-            // Get the ID token and save it to AsyncStorage
-            const idToken = await userCredential.user.getIdToken();
-            await AsyncStorage.setItem('idToken', idToken);
-            console.log("ID Token Saved:", idToken);
-
-            // Show success alert
-            Alert.alert("Success", "You have successfully registered!");
-
-            // Reset the navigation stack and navigate to the 'Tabs' stack (defaulting to 'Chats' screen)
-            navigation.reset({
-                index: 0, // Reset to the first route
-                routes: [{ name: 'Tabs' }],  // Navigate to 'Tabs' screen
-            });
-            // Optionally navigate to the 'Chats' screen after resetting the stack
-            navigation.navigate('Tabs', {
-                screen: 'Chats',  // Navigate to the 'Chats' screen within the Tabs navigator
-            });
-
-        } catch (error) {
-            console.log("Registration Error:", error);
-            Alert.alert("Error", error.message || "Something went wrong.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
 
-
+    const renderChatItem = ({ item }) => (
+        <TouchableOpacity style={styles.chatItem} onPress={() => handleChatNavigation(item)}>
+            <Image source={{ uri: item.avatar }} style={styles.avatar} />
+            <View style={styles.chatInfo}>
+                <Text style={styles.chatName}>{item.name}</Text>
+                <Text style={styles.chatMessage} numberOfLines={1}>
+                    {item.lastMessage}
+                </Text>
+            </View>
+            <Text style={styles.chatTime}>{item.time}</Text>
+        </TouchableOpacity>
+    );
 
     return (
-        <SafeAreaView style={styles.container}>
-            <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
-                style={{ flex: 1 }}
-            >
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                    <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                        <View style={styles.imageContainer}>
-                            <Image source={registerIntersection} style={styles.image} />
-                            <Text style={styles.title}>Create Your Account</Text>
-                        </View>
-                        <View style={styles.formContainer}>
-                            {["name", "email", "phone", "password"].map((field) => (
-                                <InputComponent
-                                    key={field}
-                                    label={field.charAt(0).toUpperCase() + field.slice(1)}
-                                    value={form[field]}
-                                    onChangeText={(value) => handleChange(field, value)}
-                                    errorMessage={errors[field]}
-                                    keyboardType={field === "phone" ? "phone-pad" : field === "email" ? "email-address" : "default"}
-                                    secureTextEntry={field === "password"}
-                                    iconName={field === "name" ? "account-circle" : field === "email" ? "email" : field === "phone" ? "phone" : "lock"}
-                                />
-                            ))}
-
-                            <ButtonComponent
-                                title={isLoading ? "Registering..." : "Register"}
-                                onPress={handleRegister}
-                                isLoading={isLoading}
-                                disabled={isLoading}
-                                buttonStyle={{ backgroundColor: isLoading ? "#a0c4e2" : "#007BFF" }}
-                            />
-
-                            <View style={styles.footer}>
-                                <Text style={styles.footerText}>Already have an account?</Text>
-                                <Pressable onPress={() => navigation.navigate("LoginScreen")}>
-                                    <Text style={styles.footerLink}> Login</Text>
-                                </Pressable>
-                            </View>
-                        </View>
-                    </ScrollView>
-                </TouchableWithoutFeedback>
-            </KeyboardAvoidingView>
-        </SafeAreaView>
+        <View style={styles.container}>
+            <StatusBar backgroundColor="#075E54" barStyle="light-content" />
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>Chats</Text>
+                <View style={styles.headerIcons}>
+                    <MaterialIcons name="search" size={24} color="#fff" style={styles.icon} />
+                    <MaterialIcons name="more-vert" size={24} color="#fff" />
+                </View>
+            </View>
+            <FlatList
+                data={chatData}
+                keyExtractor={(item) => item.id}
+                renderItem={renderChatItem}
+                contentContainerStyle={styles.chatList}
+            />
+        </View>
     );
 };
 
-export default RegisterScreen;
-
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#fff" },
-    imageContainer: { alignItems: "center", marginVertical: 20 },
-    image: { width: 200, height: 200 },
-    title: { fontSize: 24, fontWeight: "bold", marginTop: 10, color: "#333" },
-    formContainer: { paddingHorizontal: 20 },
-    footer: { flexDirection: "row", justifyContent: "center", marginTop: 10 },
-    footerText: { fontSize: 14, color: "#555" },
-    footerLink: { fontSize: 14, color: "#007BFF", fontWeight: "bold" },
+    container: {
+        flex: 1,
+        backgroundColor: '#fff',
+    },
+    header: {
+        height: 60,
+        backgroundColor: '#075E54',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 15,
+        paddingTop: 0,
+    },
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#fff',
+    },
+    headerIcons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    icon: {
+        marginRight: 15,
+    },
+    chatList: {
+        paddingVertical: 10,
+    },
+    chatItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    avatar: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        marginRight: 15,
+    },
+    chatInfo: {
+        flex: 1,
+    },
+    chatName: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#000',
+    },
+    chatMessage: {
+        fontSize: 14,
+        color: '#555',
+        marginTop: 2,
+    },
+    chatTime: {
+        fontSize: 12,
+        color: '#888',
+    },
 });
+
+export default ChatlistScreen;

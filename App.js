@@ -1,23 +1,44 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Routes from './src/navigation/Routes'
-
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet } from 'react-native';
+import * as Font from 'expo-font';
+import Routes from './src/navigation/Routes';
+import { NavigationContainer } from '@react-navigation/native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 const App = () => {
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+
+  const loadFonts = async () => {
+    await Font.loadAsync({
+      Montserrat: require('./src/assets/fonts/Montserrat.ttf'),
+    });
+    setFontsLoaded(true);
+  };
+
+  useEffect(() => {
+    loadFonts();
+  }, []);
+
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded) {
+      await SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
-    <View style={styles.container}>
+    <GestureHandlerRootView style={styles.container} onLayout={onLayoutRootView}>
       <Routes />
-    </View>
+    </GestureHandlerRootView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  text: {
-    fontSize: 18,
-    color: '#333',
   },
 });
 

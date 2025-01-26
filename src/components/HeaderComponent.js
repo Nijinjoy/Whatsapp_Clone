@@ -5,8 +5,10 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 const HeaderComponent = ({ title, onBackPress }) => {
     return (
         <View style={styles.header}>
-            <MaterialIcons name="arrow-back" size={24} color="#fff" onPress={onBackPress} />
-            <Text style={styles.headerTitle}>{title}</Text>
+            <View style={styles.leftSection}>
+                <MaterialIcons name="arrow-back" size={24} color="#fff" onPress={onBackPress} />
+                <Text style={styles.headerTitle}>{title}</Text>
+            </View>
             <View style={styles.headerIcons}>
                 <MaterialIcons name="search" size={24} color="#fff" style={styles.icon} />
                 <MaterialIcons name="more-vert" size={24} color="#fff" />
@@ -24,12 +26,15 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 15,
     },
+    leftSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
     headerTitle: {
         fontSize: 20,
         fontWeight: 'bold',
         color: '#fff',
-        flex: 1,
-        textAlign: 'center',
+        marginLeft: 10, // Add some space between the icon and the title
     },
     headerIcons: {
         flexDirection: 'row',
@@ -41,3 +46,4 @@ const styles = StyleSheet.create({
 });
 
 export default HeaderComponent;
+

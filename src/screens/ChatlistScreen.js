@@ -1,6 +1,15 @@
-import React from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import React, { useState } from 'react';
+import {
+    View,
+    Text,
+    FlatList,
+    Image,
+    TouchableOpacity,
+    StyleSheet,
+    StatusBar,
+} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { Swipeable } from 'react-native-gesture-handler';
 
 const chatData = [
     {
@@ -8,70 +17,35 @@ const chatData = [
         name: 'John Doe',
         lastMessage: 'Hey, how are you?',
         time: '12:30 PM',
-        avatar: 'https://via.placeholder.com/50',
+        avatar: 'https://randomuser.me/api/portraits/men/1.jpg',
     },
     {
         id: '2',
         name: 'Jane Smith',
         lastMessage: 'Let’s catch up tomorrow.',
         time: '11:45 AM',
-        avatar: 'https://via.placeholder.com/50',
+        avatar: 'https://randomuser.me/api/portraits/women/2.jpg',
     },
     {
         id: '3',
         name: 'Alex Johnson',
         lastMessage: 'Got it. Thanks!',
         time: '10:15 AM',
-        avatar: 'https://via.placeholder.com/50',
+        avatar: 'https://randomuser.me/api/portraits/men/3.jpg',
     },
     {
-        id: '3',
+        id: '4',
         name: 'Alex Johnson',
         lastMessage: 'Got it. Thanks!',
         time: '10:15 AM',
-        avatar: 'https://via.placeholder.com/50',
+        avatar: 'https://randomuser.me/api/portraits/women/4.jpg',
     },
     {
-        id: '3',
+        id: '5',
         name: 'Alex Johnson',
         lastMessage: 'Got it. Thanks!',
         time: '10:15 AM',
-        avatar: 'https://via.placeholder.com/50',
-    },
-    {
-        id: '3',
-        name: 'Alex Johnson',
-        lastMessage: 'Got it. Thanks!',
-        time: '10:15 AM',
-        avatar: 'https://via.placeholder.com/50',
-    },
-    {
-        id: '3',
-        name: 'Alex Johnson',
-        lastMessage: 'Got it. Thanks!',
-        time: '10:15 AM',
-        avatar: 'https://via.placeholder.com/50',
-    },
-    {
-        id: '3',
-        name: 'Alex Johnson',
-        lastMessage: 'Got it. Thanks!',
-        time: '10:15 AM',
-        avatar: 'https://via.placeholder.com/50',
-    },
-    {
-        id: '3',
-        name: 'Alex Johnson',
-        lastMessage: 'Got it. Thanks!',
-        time: '10:15 AM',
-        avatar: 'https://via.placeholder.com/50',
-    },
-    {
-        id: '3',
-        name: 'Alex Johnson',
-        lastMessage: 'Got it. Thanks!',
-        time: '10:15 AM',
-        avatar: 'https://via.placeholder.com/50',
+        avatar: 'https://randomuser.me/api/portraits/men/3.jpg',
     },
 ];
 
@@ -80,25 +54,55 @@ const ChatlistScreen = ({ navigation }) => {
         navigation.navigate('ChatScreen', { chat });
     };
 
-    const renderChatItem = ({ item }) => (
-        <TouchableOpacity style={styles.chatItem} onPress={() => handleChatNavigation(item)}>
-            <Image source={{ uri: item.avatar }} style={styles.avatar} />
-            <View style={styles.chatInfo}>
-                <Text style={styles.chatName}>{item.name}</Text>
-                <Text style={styles.chatMessage} numberOfLines={1}>
-                    {item.lastMessage}
-                </Text>
+    const renderRightActions = (progress, dragX, item) => {
+        return (
+            <View style={styles.actionsContainer}>
+                <TouchableOpacity
+                    style={[styles.actionButton, styles.editButton]}
+                    onPress={() => handleEdit(item)}
+                >
+                    <MaterialIcons name="edit" size={24} color="#fff" />
+                    <Text style={styles.actionText}>Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.actionButton, styles.deleteButton]}
+                    onPress={() => handleDelete(item.id)}
+                >
+                    <MaterialIcons name="delete" size={24} color="#fff" />
+                    <Text style={styles.actionText}>Delete</Text>
+                </TouchableOpacity>
             </View>
-            <Text style={styles.chatTime}>{item.time}</Text>
-        </TouchableOpacity>
+        );
+    };
+
+    const handleEdit = (item) => {
+        alert(`Editing chat: ${item.name}`);
+    };
+
+    const handleDelete = (id) => {
+        alert(`Deleting chat with ID: ${id}`);
+    };
+
+    const renderChatItem = ({ item }) => (
+        <Swipeable
+            renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item)}
+        >
+            <TouchableOpacity style={styles.chatItem} onPress={() => handleChatNavigation(item)}>
+                <Image source={{ uri: item.avatar }} style={styles.avatar} />
+                <View style={styles.chatInfo}>
+                    <Text style={styles.chatName}>{item.name}</Text>
+                    <Text style={styles.chatMessage} numberOfLines={1}>
+                        {item.lastMessage}
+                    </Text>
+                </View>
+                <Text style={styles.chatTime}>{item.time}</Text>
+            </TouchableOpacity>
+        </Swipeable>
     );
 
     return (
         <View style={styles.container}>
-            {/* StatusBar */}
             <StatusBar backgroundColor="#075E54" barStyle="light-content" />
-
-            {/* Header */}
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Chats</Text>
                 <View style={styles.headerIcons}>
@@ -106,8 +110,6 @@ const ChatlistScreen = ({ navigation }) => {
                     <MaterialIcons name="more-vert" size={24} color="#fff" />
                 </View>
             </View>
-
-            {/* Chat List */}
             <FlatList
                 data={chatData}
                 keyExtractor={(item) => item.id}
@@ -130,7 +132,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 15,
-        paddingTop: 0, // No extra padding needed as StatusBar handles the top space
+        paddingTop: 0,
     },
     headerTitle: {
         fontSize: 20,
@@ -177,6 +179,28 @@ const styles = StyleSheet.create({
     chatTime: {
         fontSize: 12,
         color: '#888',
+    },
+    actionsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+    },
+    actionButton: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 70,
+        height: '100%',
+    },
+    editButton: {
+        backgroundColor: '#4CAF50',
+    },
+    deleteButton: {
+        backgroundColor: '#F44336',
+    },
+    actionText: {
+        color: '#fff',
+        fontSize: 12,
+        marginTop: 4,
     },
 });
 

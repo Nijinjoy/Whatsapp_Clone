@@ -12,7 +12,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const CallScreen = () => {
     const [searchQuery, setSearchQuery] = useState('');
-    const [filter, setFilter] = useState('All'); // 'All', 'Missed', 'Incoming', 'Outgoing'
+    const [filter, setFilter] = useState('All'); 
 
     // Sample call data
     const callData = [

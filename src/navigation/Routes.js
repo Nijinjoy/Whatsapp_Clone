@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { NavigationContainer } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import ChatScreen from '../screens/ChatScreen';
 import SettingScreen from '../screens/SettingScreen';
@@ -12,10 +11,12 @@ import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { NavigationContainer } from '@react-navigation/native';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
+// Bottom Tabs Navigator
 const BottomTabs = () => {
     return (
         <Tab.Navigator
@@ -46,7 +47,11 @@ const BottomTabs = () => {
                 },
             })}
         >
-            <Tab.Screen name="ChatlistScreen" component={ChatlistScreen} />
+            <Tab.Screen
+                name="ChatlistScreen"
+                component={ChatlistScreen}
+                options={{ tabBarLabel: 'Chats' }}
+            />
             <Tab.Screen name="Settings" component={SettingScreen} />
             <Tab.Screen name="Calls" component={CallScreen} />
             <Tab.Screen name="Profile" component={ProfileScreen} />
@@ -54,32 +59,33 @@ const BottomTabs = () => {
     );
 };
 
+// Main Routes Component
 const Routes = () => {
-    const [isLoggedIn, setIsLoggedIn] = useState(null);
-    const [isSplashDone, setIsSplashDone] = useState(false); 
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isSplashDone, setIsSplashDone] = useState(false);
 
+    // Check login status on app load
     useEffect(() => {
         const checkLoginStatus = async () => {
             try {
                 const token = await AsyncStorage.getItem('idToken');
                 if (token) {
-                    setIsLoggedIn(true); // User is logged in
+                    setIsLoggedIn(true);
                 } else {
-                    setIsLoggedIn(false); // User is not logged in
+                    setIsLoggedIn(false);
                 }
             } catch (error) {
-                console.error("Error checking login status:", error);
+                console.error('Error checking login status:', error);
                 setIsLoggedIn(false);
             }
-            // Give a slight delay before finishing the splash screen
             setTimeout(() => {
-                setIsSplashDone(true); // Finish splash screen after checking the status
-            }, 2000); // Adjust this delay to control how long the splash screen stays visible
+                setIsSplashDone(true);
+            }, 2000); // Simulate a 2-second splash screen
         };
-
         checkLoginStatus();
     }, []);
 
+    // Show SplashScreen until it's done
     if (!isSplashDone) {
         return <SplashScreen />;
     }
@@ -87,31 +93,36 @@ const Routes = () => {
     return (
         <NavigationContainer>
             <Stack.Navigator>
-                {isLoggedIn === false ? (
+                {!isLoggedIn ? (
+                // Auth Screens
                     <>
                         <Stack.Screen
                             name="RegisterScreen"
-                            component={RegisterScreen}
                             options={{ headerShown: false }}
-                        />
+                        >
+                            {(props) => <RegisterScreen {...props} setIsLoggedIn={setIsLoggedIn} />}
+                        </Stack.Screen>
                         <Stack.Screen
                             name="LoginScreen"
-                            component={LoginScreen}
                             options={{ headerShown: false }}
-                        />
+                        >
+                            {(props) => <LoginScreen {...props} setIsLoggedIn={setIsLoggedIn} />}
+                        </Stack.Screen>
                     </>
-                ) : isLoggedIn === true ? (
-                    <Stack.Screen
-                        name="Tabs"
-                        component={BottomTabs}
-                        options={{ headerShown: false }}
-                    />
-                    ) : (
+                ) : (
+                    // App Screens (after login)
+                    <>
                         <Stack.Screen
-                                name="Splash"
-                                component={SplashScreen}
+                                name="BottomTabs"
+                                component={BottomTabs}
                                 options={{ headerShown: false }}
                             />
+                        <Stack.Screen
+                                name="ChatScreen"
+                                component={ChatScreen}
+                                options={{ headerShown: false }}
+                            />
+                        </>
                 )}
             </Stack.Navigator>
         </NavigationContainer>

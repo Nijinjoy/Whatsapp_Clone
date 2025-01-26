@@ -10,21 +10,47 @@ import {
     ScrollView,
     Keyboard,
     TouchableWithoutFeedback,
+    Alert,
 } from 'react-native';
 import React, { useState } from 'react';
 import { loginIntersection } from '../assets/images';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
+import { auth, createUserWithEmailAndPassword } from '../utils/firebaseHelper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const RegisterScreen = () => {
-    const navigation = useNavigation()
+const RegisterScreen = ({ setIsLoggedIn }) => {
+    const navigation = useNavigation();
+    const [fullName, setFullName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
-    const onNavigate = () => {
-        navigation.navigate("LoginScreen")
-    }
+    const handleRegister = async () => {
+        if (!fullName || !email || !password || !confirmPassword) {
+            Alert.alert('Error', 'Please fill in all fields');
+            return;
+        }
+        if (password !== confirmPassword) {
+            Alert.alert('Error', 'Passwords do not match');
+            return;
+        }
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            console.log("userCredential===>", userCredential);
+            const user = userCredential.user;
+            const idToken = await user.getIdToken();
+            await AsyncStorage.setItem('idToken', idToken);
+            Alert.alert('Success', 'User registered successfully!');
+            setIsLoggedIn(true);
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Error', error.message);
+        }
+    };
 
     return (
         <KeyboardAvoidingView
@@ -32,14 +58,11 @@ const RegisterScreen = () => {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                 <View style={styles.inner}>
-                    {/* Header Section */}
                     <LinearGradient colors={['#007BFF', '#0056D2']} style={styles.header}>
                         <Image source={loginIntersection} style={styles.image} />
                         <Text style={styles.title}>Welcome!</Text>
                         <Text style={styles.subtitle}>Create an account to get started</Text>
                     </LinearGradient>
-
-                    {/* Form Section */}
                     <ScrollView contentContainerStyle={styles.scrollContent}>
                         <View style={styles.formSection}>
                             <Text style={styles.formTitle}>Register your account</Text>
@@ -54,6 +77,8 @@ const RegisterScreen = () => {
                                     style={styles.input}
                                     placeholder="Full Name"
                                     placeholderTextColor="#aaa"
+                                    value={fullName}
+                                    onChangeText={(text) => setFullName(text)}
                                 />
                             </View>
                             <View style={styles.inputWrapper}>
@@ -68,6 +93,8 @@ const RegisterScreen = () => {
                                     placeholder="Email"
                                     placeholderTextColor="#aaa"
                                     keyboardType="email-address"
+                                    value={email}
+                                    onChangeText={(text) => setEmail(text)}
                                 />
                             </View>
                             <View style={styles.inputWrapper}>
@@ -82,6 +109,8 @@ const RegisterScreen = () => {
                                     placeholder="Password"
                                     placeholderTextColor="#aaa"
                                     secureTextEntry={!passwordVisible}
+                                    value={password}
+                                    onChangeText={(text) => setPassword(text)}
                                 />
                                 <TouchableOpacity
                                     onPress={() => setPasswordVisible(!passwordVisible)}>
@@ -106,6 +135,8 @@ const RegisterScreen = () => {
                                     placeholder="Confirm Password"
                                     placeholderTextColor="#aaa"
                                     secureTextEntry={!confirmPasswordVisible}
+                                    value={confirmPassword}
+                                    onChangeText={(text) => setConfirmPassword(text)}
                                 />
                                 <TouchableOpacity
                                     onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}>
@@ -118,7 +149,7 @@ const RegisterScreen = () => {
                                     />
                                 </TouchableOpacity>
                             </View>
-                            <TouchableOpacity style={styles.loginButton}>
+                            <TouchableOpacity style={styles.loginButton} onPress={handleRegister}>
                                 <Text style={styles.loginButtonText}>Register</Text>
                             </TouchableOpacity>
                         </View>
@@ -127,7 +158,7 @@ const RegisterScreen = () => {
                     {/* Login Prompt */}
                     <View style={styles.signupPrompt}>
                         <Text style={styles.signupText}>Already have an account?</Text>
-                        <TouchableOpacity onPress={onNavigate}>
+                        <TouchableOpacity>
                             <Text style={styles.signupLink}> Log In</Text>
                         </TouchableOpacity>
                     </View>
