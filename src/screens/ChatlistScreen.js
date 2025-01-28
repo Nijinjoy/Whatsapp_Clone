@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef } from 'react';
 import {
     View,
     Text,
@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     StyleSheet,
     StatusBar,
+    Animated,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -50,27 +51,45 @@ const chatData = [
 ];
 
 const ChatlistScreen = ({ navigation }) => {
+    const swipeableRefs = useRef({});
+
     const handleChatNavigation = (chat) => {
         navigation.navigate('ChatScreen', { chat });
     };
 
     const renderRightActions = (progress, dragX, item) => {
+        const scale = dragX.interpolate({
+            inputRange: [-150, 0],
+            outputRange: [1, 0.8],
+            extrapolate: 'clamp',
+        });
+
+        const opacity = dragX.interpolate({
+            inputRange: [-150, 0],
+            outputRange: [1, 0],
+            extrapolate: 'clamp',
+        });
+
         return (
             <View style={styles.actionsContainer}>
-                <TouchableOpacity
-                    style={[styles.actionButton, styles.editButton]}
-                    onPress={() => handleEdit(item)}
-                >
-                    <MaterialIcons name="edit" size={24} color="#fff" />
-                    <Text style={styles.actionText}>Edit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.actionButton, styles.deleteButton]}
-                    onPress={() => handleDelete(item.id)}
-                >
-                    <MaterialIcons name="delete" size={24} color="#fff" />
-                    <Text style={styles.actionText}>Delete</Text>
-                </TouchableOpacity>
+                <Animated.View style={{ transform: [{ scale }], opacity }}>
+                    <TouchableOpacity
+                        style={[styles.actionButton, styles.editButton]}
+                        onPress={() => handleEdit(item)}
+                    >
+                        <MaterialIcons name="edit" size={24} color="#fff" />
+                        <Text style={styles.actionText}>Edit</Text>
+                    </TouchableOpacity>
+                </Animated.View>
+                <Animated.View style={{ transform: [{ scale }], opacity }}>
+                    <TouchableOpacity
+                        style={[styles.actionButton, styles.deleteButton]}
+                        onPress={() => handleDelete(item.id)}
+                    >
+                        <MaterialIcons name="delete" size={24} color="#fff" />
+                        <Text style={styles.actionText}>Delete</Text>
+                    </TouchableOpacity>
+                </Animated.View>
             </View>
         );
     };
@@ -85,7 +104,17 @@ const ChatlistScreen = ({ navigation }) => {
 
     const renderChatItem = ({ item }) => (
         <Swipeable
+            ref={(ref) => (swipeableRefs.current[item.id] = ref)}
             renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item)}
+            onSwipeableWillOpen={() => {
+                Object.keys(swipeableRefs.current).forEach((key) => {
+                    if (key !== item.id && swipeableRefs.current[key]) {
+                        swipeableRefs.current[key].close();
+                    }
+                });
+            }}
+            friction={2} // Adjust swipe sensitivity
+            overshootFriction={8} // Adjust overshoot effect
         >
             <TouchableOpacity style={styles.chatItem} onPress={() => handleChatNavigation(item)}>
                 <Image source={{ uri: item.avatar }} style={styles.avatar} />
@@ -147,7 +176,7 @@ const styles = StyleSheet.create({
         marginRight: 15,
     },
     chatList: {
-        paddingVertical: 10,
+        paddingVertical: 0,
     },
     chatItem: {
         flexDirection: 'row',

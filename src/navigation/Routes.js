@@ -35,7 +35,7 @@ const BottomTabs = () => {
                     }
                     return <MaterialIcons name={iconName} size={size} color={color} />;
                 },
-                tabBarActiveTintColor: 'tomato',
+                tabBarActiveTintColor: 'green',
                 tabBarInactiveTintColor: 'gray',
                 headerShown: false,
                 tabBarStyle: {
@@ -94,7 +94,7 @@ const Routes = () => {
         <NavigationContainer>
             <Stack.Navigator>
                 {!isLoggedIn ? (
-                // Auth Screens
+                    // Auth Screens
                     <>
                         <Stack.Screen
                             name="RegisterScreen"
@@ -113,16 +113,16 @@ const Routes = () => {
                     // App Screens (after login)
                     <>
                         <Stack.Screen
-                                name="BottomTabs"
-                                component={BottomTabs}
-                                options={{ headerShown: false }}
-                            />
+                            name="BottomTabs"
+                            component={BottomTabs}
+                            options={{ headerShown: false }}
+                        />
                         <Stack.Screen
-                                name="ChatScreen"
-                                component={ChatScreen}
-                                options={{ headerShown: false }}
-                            />
-                        </>
+                            name="ChatScreen"
+                            component={ChatScreen}
+                            options={{ headerShown: false }}
+                        />
+                    </>
                 )}
             </Stack.Navigator>
         </NavigationContainer>
