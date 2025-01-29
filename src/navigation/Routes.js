@@ -16,8 +16,7 @@ import { NavigationContainer } from '@react-navigation/native';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-// Bottom Tabs Navigator
-const BottomTabs = () => {
+const BottomTabs = ({ setIsLoggedIn }) => {
     return (
         <Tab.Navigator
             screenOptions={({ route }) => ({
@@ -54,7 +53,9 @@ const BottomTabs = () => {
             />
             <Tab.Screen name="Settings" component={SettingScreen} />
             <Tab.Screen name="Calls" component={CallScreen} />
-            <Tab.Screen name="Profile" component={ProfileScreen} />
+            <Tab.Screen name="Profile">
+                {(props) => <ProfileScreen {...props} setIsLoggedIn={setIsLoggedIn} />}
+            </Tab.Screen>
         </Tab.Navigator>
     );
 };
@@ -94,7 +95,6 @@ const Routes = () => {
         <NavigationContainer>
             <Stack.Navigator>
                 {!isLoggedIn ? (
-                    // Auth Screens
                     <>
                         <Stack.Screen
                             name="RegisterScreen"
@@ -110,13 +110,15 @@ const Routes = () => {
                         </Stack.Screen>
                     </>
                 ) : (
-                    // App Screens (after login)
                     <>
-                        <Stack.Screen
-                            name="BottomTabs"
-                            component={BottomTabs}
-                            options={{ headerShown: false }}
-                        />
+                            <Stack.Screen
+                                name="BottomTabs"
+                                options={{ headerShown: false }}
+                            >
+                                {(props) => (
+                                    <BottomTabs {...props} setIsLoggedIn={setIsLoggedIn} />
+                                )}
+                            </Stack.Screen>
                         <Stack.Screen
                             name="ChatScreen"
                             component={ChatScreen}

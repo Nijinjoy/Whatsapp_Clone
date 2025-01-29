@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -7,15 +7,21 @@ import {
     TextInput,
     TouchableOpacity,
     Image,
+    Modal,
+    Alert,
+    Animated,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import * as Contacts from 'expo-contacts';
 
 const CallScreen = () => {
     const [searchQuery, setSearchQuery] = useState('');
-    const [filter, setFilter] = useState('All'); 
+    const [filter, setFilter] = useState('All');
+    const [isModalVisible, setIsModalVisible] = useState(false); // State to control modal visibility
+    const [contacts, setContacts] = useState([]); // State to store device contacts
+    const [modalY] = useState(new Animated.Value(300)); // Animation for modal sliding up
 
-    // Sample call data
-    const callData = [
+    const [callData, setCallData] = useState([
         {
             id: '1',
             name: 'John Doe',
@@ -44,9 +50,40 @@ const CallScreen = () => {
             time: 'Today, 8:15 AM',
             avatar: 'https://i.pravatar.cc/150?img=4',
         },
-    ];
+    ]); // Sample call data
 
-    // Filtered Data
+    // Fetch contacts from device
+    const fetchContacts = async () => {
+        const { status } = await Contacts.requestPermissionsAsync();
+        if (status === 'granted') {
+            const { data } = await Contacts.getContactsAsync({
+                fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
+            });
+            setContacts(data); // Store fetched contacts
+        } else {
+            Alert.alert('Permission Denied', 'We need access to your contacts');
+        }
+    };
+
+    // Call fetchContacts when the modal is shown
+    useEffect(() => {
+        if (isModalVisible) {
+            fetchContacts();
+            // Animate modal sliding up from the bottom
+            Animated.spring(modalY, {
+                toValue: 0,
+                useNativeDriver: true,
+            }).start();
+        } else {
+            // Animate modal sliding down when closed
+            Animated.spring(modalY, {
+                toValue: 300,
+                useNativeDriver: true,
+            }).start();
+        }
+    }, [isModalVisible]);
+
+    // Filtered Call Data
     const filteredData = callData.filter((item) => {
         const matchesSearch = item.name
             .toLowerCase()
@@ -72,9 +109,7 @@ const CallScreen = () => {
                                     : 'call-missed'
                         }
                         size={18}
-                        color={
-                            item.type === 'missed' ? '#d32f2f' : '#075E54'
-                        }
+                        color={item.type === 'missed' ? '#d32f2f' : '#075E54'}
                     />
                     <Text style={styles.time}>{item.time}</Text>
                 </View>
@@ -90,7 +125,7 @@ const CallScreen = () => {
             {/* Static Header */}
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Calls</Text>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => setIsModalVisible(true)}>
                     <MaterialIcons name="group-add" size={24} color="#fff" />
                 </TouchableOpacity>
             </View>
@@ -136,6 +171,42 @@ const CallScreen = () => {
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.callList}
             />
+
+            {/* Modal to View Contacts */}
+            <Modal
+                visible={isModalVisible}
+                animationType="none" // Disable default animation
+                transparent={true}
+                onRequestClose={() => setIsModalVisible(false)}
+            >
+                <Animated.View
+                    style={[styles.modalOverlay, { transform: [{ translateY: modalY }] }]}
+                >
+                    <View style={styles.modalContent}>
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={() => setIsModalVisible(false)}
+                        >
+                            <MaterialIcons name="close" size={30} color="#fff" />
+                        </TouchableOpacity>
+
+                        <Text style={styles.modalTitle}>Your Contacts</Text>
+
+                        <FlatList
+                            data={contacts}
+                            keyExtractor={(item) => item.id}
+                            renderItem={({ item }) => (
+                                <View style={styles.contactItem}>
+                                    <Text style={styles.contactName}>{item.name}</Text>
+                                    {item.phoneNumbers?.[0]?.number && (
+                                        <Text style={styles.contactNumber}>{item.phoneNumbers[0].number}</Text>
+                                    )}
+                                </View>
+                            )}
+                        />
+                    </View>
+                </Animated.View>
+            </Modal>
         </View>
     );
 };
@@ -146,88 +217,125 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
     header: {
-        backgroundColor: '#075E54',
-        paddingVertical: 15,
-        paddingHorizontal: 20,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        elevation: 4,
+        padding: 10,
+        backgroundColor: '#075E54',
     },
     headerTitle: {
         fontSize: 20,
         color: '#fff',
-        fontWeight: 'bold',
     },
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
+        padding: 10,
         backgroundColor: '#f0f0f0',
-        margin: 10,
-        paddingHorizontal: 10,
-        borderRadius: 5,
     },
     searchInput: {
         flex: 1,
-        padding: 10,
-        fontSize: 16,
-        color: '#000',
+        height: 40,
+        paddingLeft: 10,
+        borderRadius: 20,
+        backgroundColor: '#fff',
     },
     filterContainer: {
         flexDirection: 'row',
         justifyContent: 'space-evenly',
-        marginVertical: 10,
+        padding: 10,
+        backgroundColor: '#f9f9f9',
     },
     filterTab: {
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 20,
-        backgroundColor: '#e0e0e0',
+        padding: 10,
     },
     activeFilterTab: {
-        backgroundColor: '#075E54',
+        borderBottomWidth: 2,
+        borderBottomColor: '#075E54',
     },
     filterText: {
-        fontSize: 14,
-        color: '#666',
+        fontSize: 16,
     },
     activeFilterText: {
-        color: '#fff',
+        color: '#075E54',
     },
     callList: {
-        paddingHorizontal: 10,
+        paddingBottom: 20,
     },
     callItem: {
         flexDirection: 'row',
+        padding: 15,
         alignItems: 'center',
-        paddingVertical: 15,
         borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
+        borderBottomColor: '#f0f0f0',
     },
     avatar: {
         width: 50,
         height: 50,
         borderRadius: 25,
-        marginRight: 15,
     },
     callDetails: {
         flex: 1,
+        marginLeft: 15,
     },
     name: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#000',
     },
     callInfo: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 3,
     },
     time: {
-        fontSize: 14,
-        color: '#666',
         marginLeft: 5,
+        color: '#999',
+    },
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'flex-end', // Position at the bottom
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+        width: '100%',
+        height: '60%',
+        backgroundColor: '#fff',
+        padding: 20,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+    },
+    closeButton: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        backgroundColor: '#075E54',
+        borderRadius: 25,
+        padding: 8,
+    },
+    modalTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#333',
+        textAlign: 'center',
+        marginBottom: 15,
+    },
+    contactItem: {
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    contactName: {
+        fontSize: 18,
+        color: '#333',
+    },
+    contactNumber: {
+        fontSize: 16,
+        color: '#666',
     },
 });
 
 export default CallScreen;
+

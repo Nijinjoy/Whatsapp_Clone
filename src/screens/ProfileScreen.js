@@ -7,11 +7,14 @@ import {
     TouchableOpacity,
     ScrollView,
     TextInput,
+    Alert,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const ProfileScreen = () => {
+const ProfileScreen = ({ setIsLoggedIn }) => {
     const [editMode, setEditMode] = useState(false);
     const [profileInfo, setProfileInfo] = useState({
         name: 'John Doe',
@@ -20,6 +23,8 @@ const ProfileScreen = () => {
     const [profilePicture, setProfilePicture] = useState(
         'https://i.pravatar.cc/150?img=10'
     );
+
+    const navigation = useNavigation(); // Initialize navigation
 
     const handleEditProfile = () => {
         setEditMode(!editMode);
@@ -45,6 +50,36 @@ const ProfileScreen = () => {
         if (!result.cancelled) {
             setProfilePicture(result.uri);
         }
+    };
+
+    const handleLogout = async () => {
+        Alert.alert(
+            'Log Out',
+            'Are you sure you want to log out?',
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel',
+                },
+                {
+                    text: 'Log Out',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            // Clear the token from AsyncStorage
+                            await AsyncStorage.removeItem('idToken');
+                            // Update the login state
+                            setIsLoggedIn(false);
+                            // Navigate to the login screen
+                            navigation.navigate('LoginScreen');
+                        } catch (error) {
+                            console.error('Error logging out:', error);
+                        }
+                    },
+                },
+            ],
+            { cancelable: true }
+        );
     };
 
 
@@ -101,6 +136,11 @@ const ProfileScreen = () => {
                     <Text style={styles.editButtonText}>
                         {editMode ? 'Save' : 'Edit Profile'}
                     </Text>
+                </TouchableOpacity>
+
+                {/* Log Out Button */}
+                <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                    <Text style={styles.logoutButtonText}>Log Out</Text>
                 </TouchableOpacity>
             </ScrollView>
         </View>
@@ -174,6 +214,18 @@ const styles = StyleSheet.create({
         marginTop: 20,
     },
     editButtonText: {
+        fontSize: 16,
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    logoutButton: {
+        backgroundColor: '#FF3B30',
+        padding: 15,
+        borderRadius: 5,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    logoutButtonText: {
         fontSize: 16,
         color: '#fff',
         fontWeight: 'bold',

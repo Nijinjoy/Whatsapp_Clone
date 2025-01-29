@@ -3,7 +3,6 @@ import {
     Text,
     StyleSheet,
     Image,
-    TextInput,
     TouchableOpacity,
     KeyboardAvoidingView,
     Platform,
@@ -19,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { auth, createUserWithEmailAndPassword } from '../utils/firebaseHelper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import InputComponent from '../components/InputComponent';
 
 const RegisterScreen = ({ setIsLoggedIn }) => {
     const navigation = useNavigation();
@@ -28,27 +28,61 @@ const RegisterScreen = ({ setIsLoggedIn }) => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+    const [emailError, setEmailError] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+    const [confirmPasswordError, setConfirmPasswordError] = useState('');
+
+    const validateEmail = (text) => {
+        setEmail(text);
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(text)) {
+            setEmailError('Please enter a valid email address');
+        } else {
+            setEmailError('');
+        }
+    };
+
+    const validatePassword = (text) => {
+        setPassword(text);
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
+        if (!passwordRegex.test(text)) {
+            setPasswordError('Password must be at least 6 characters and contain a number, lowercase and uppercase letter');
+        } else {
+            setPasswordError('');
+        }
+    };
+
+    const validateConfirmPassword = (text) => {
+        setConfirmPassword(text);
+        if (text !== password) {
+            setConfirmPasswordError('Passwords do not match');
+        } else {
+            setConfirmPasswordError('');
+        }
+    };
 
     const handleRegister = async () => {
         if (!fullName || !email || !password || !confirmPassword) {
-            Alert.alert('Error', 'Please fill in all fields');
             return;
         }
         if (password !== confirmPassword) {
-            Alert.alert('Error', 'Passwords do not match');
+            return;
+        }
+        if (emailError || passwordError || confirmPasswordError) {
+            Alert.alert('Error', 'Please fix the errors before submitting');
             return;
         }
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            console.log("userCredential===>", userCredential);
+            console.log("userCredential==>", userCredential);
             const user = userCredential.user;
+            console.log("user==>", user);
             const idToken = await user.getIdToken();
             await AsyncStorage.setItem('idToken', idToken);
             Alert.alert('Success', 'User registered successfully!');
             setIsLoggedIn(true);
         } catch (error) {
             console.error(error);
-            Alert.alert('Error', error.message);
         }
     };
 
@@ -65,100 +99,44 @@ const RegisterScreen = ({ setIsLoggedIn }) => {
                     </LinearGradient>
                     <ScrollView contentContainerStyle={styles.scrollContent}>
                         <View style={styles.formSection}>
-                            <Text style={styles.formTitle}>Register your account</Text>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons
-                                    name="person-outline"
-                                    size={20}
-                                    color="#aaa"
-                                    style={styles.icon}
-                                />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Full Name"
-                                    placeholderTextColor="#aaa"
-                                    value={fullName}
-                                    onChangeText={(text) => setFullName(text)}
-                                />
-                            </View>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons
-                                    name="mail-outline"
-                                    size={20}
-                                    color="#aaa"
-                                    style={styles.icon}
-                                />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Email"
-                                    placeholderTextColor="#aaa"
-                                    keyboardType="email-address"
-                                    value={email}
-                                    onChangeText={(text) => setEmail(text)}
-                                />
-                            </View>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons
-                                    name="lock-closed-outline"
-                                    size={20}
-                                    color="#aaa"
-                                    style={styles.icon}
-                                />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Password"
-                                    placeholderTextColor="#aaa"
-                                    secureTextEntry={!passwordVisible}
-                                    value={password}
-                                    onChangeText={(text) => setPassword(text)}
-                                />
-                                <TouchableOpacity
-                                    onPress={() => setPasswordVisible(!passwordVisible)}>
-                                    <Ionicons
-                                        name={
-                                            passwordVisible ? 'eye-off-outline' : 'eye-outline'
-                                        }
-                                        size={20}
-                                        color="#aaa"
-                                    />
-                                </TouchableOpacity>
-                            </View>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons
-                                    name="lock-closed-outline"
-                                    size={20}
-                                    color="#aaa"
-                                    style={styles.icon}
-                                />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Confirm Password"
-                                    placeholderTextColor="#aaa"
-                                    secureTextEntry={!confirmPasswordVisible}
-                                    value={confirmPassword}
-                                    onChangeText={(text) => setConfirmPassword(text)}
-                                />
-                                <TouchableOpacity
-                                    onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}>
-                                    <Ionicons
-                                        name={
-                                            confirmPasswordVisible ? 'eye-off-outline' : 'eye-outline'
-                                        }
-                                        size={20}
-                                        color="#aaa"
-                                    />
-                                </TouchableOpacity>
-                            </View>
+                            <InputComponent
+                                value={fullName}
+                                onChangeText={setFullName}
+                                placeholder="Enter your full name"
+                            />
+                            <InputComponent
+                                value={email}
+                                onChangeText={validateEmail}
+                                placeholder="Enter your email"
+                                keyboardType="email-address"
+                                errorMessage={emailError}
+                            />
+                            <InputComponent
+                                value={password}
+                                onChangeText={validatePassword}
+                                placeholder="Enter your password"
+                                secureTextEntry={!passwordVisible}
+                                errorMessage={passwordError}
+                                rightIcon={passwordVisible ? 'eye-off-outline' : 'eye-outline'}
+                                onRightIconPress={() => setPasswordVisible(!passwordVisible)}
+                            />
+                            <InputComponent
+                                value={confirmPassword}
+                                onChangeText={validateConfirmPassword}
+                                placeholder="Confirm your password"
+                                secureTextEntry={!confirmPasswordVisible}
+                                errorMessage={confirmPasswordError}
+                                rightIcon={confirmPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
+                                onRightIconPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+                            />
                             <TouchableOpacity style={styles.loginButton} onPress={handleRegister}>
                                 <Text style={styles.loginButtonText}>Register</Text>
                             </TouchableOpacity>
                         </View>
                     </ScrollView>
-
-                    {/* Login Prompt */}
                     <View style={styles.signupPrompt}>
                         <Text style={styles.signupText}>Already have an account?</Text>
-                        <TouchableOpacity>
+                        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
                             <Text style={styles.signupLink}> Log In</Text>
                         </TouchableOpacity>
                     </View>
@@ -170,118 +148,64 @@ const RegisterScreen = ({ setIsLoggedIn }) => {
 
 export default RegisterScreen;
 
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F5F5',
     },
     inner: {
         flex: 1,
     },
     header: {
-        paddingTop: 50,
-        paddingBottom: 30,
+        paddingVertical: 30,
+        paddingHorizontal: 20,
         alignItems: 'center',
-        borderBottomLeftRadius: 50,
-        borderBottomRightRadius: 50,
+        justifyContent: 'center',
     },
     image: {
         width: 100,
         height: 100,
-        resizeMode: 'contain',
-        marginBottom: 15,
+        marginBottom: 10,
     },
     title: {
-        fontSize: 22,
+        fontSize: 24,
         fontWeight: 'bold',
         color: '#fff',
-        marginBottom: 5,
     },
     subtitle: {
         fontSize: 16,
-        color: '#e0e0e0',
-    },
-    formSection: {
-        marginTop: 20,
-        paddingHorizontal: 20,
+        color: '#fff',
     },
     scrollContent: {
-        paddingBottom: 50,
+        padding: 20,
+    },
+    formSection: {
+        marginTop: 10,
     },
     formTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        marginBottom: 20,
-        color: '#333',
-    },
-    inputWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 10,
-        paddingHorizontal: 10,
-        marginBottom: 15,
-    },
-    icon: {
-        marginRight: 10,
-    },
-    input: {
-        flex: 1,
-        height: 50,
-        fontSize: 16,
-        color: '#333',
+        marginBottom: 0,
     },
     loginButton: {
         backgroundColor: '#007BFF',
-        paddingVertical: 15,
-        borderRadius: 10,
+        paddingVertical: 10,
+        marginVertical: 10,
+        borderRadius: 8,
         alignItems: 'center',
-        marginTop: 20,
-        elevation: 2,
     },
     loginButtonText: {
         color: '#fff',
         fontSize: 16,
-        fontWeight: 'bold',
-    },
-    forgotPasswordText: {
-        marginTop: 15,
-        fontSize: 14,
-        color: '#007BFF',
-        textAlign: 'center',
-    },
-    socialLoginSection: {
-        marginTop: 20,
-    },
-    socialButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#333',
-        paddingVertical: 10,
-        paddingHorizontal: 15,
-        borderRadius: 10,
-        marginVertical: 5,
-        justifyContent: 'center',
-    },
-    socialButtonText: {
-        color: '#fff',
-        fontSize: 14,
-        marginLeft: 10,
+        fontWeight: '600',
     },
     signupPrompt: {
         flexDirection: 'row',
         justifyContent: 'center',
-        alignItems: 'center',
-        padding: 10,
-        borderTopWidth: 1,
-        borderColor: '#ddd',
+        paddingBottom: 30,
     },
     signupText: {
         fontSize: 14,
-        color: '#555',
+        color: '#000',
     },
     signupLink: {
         fontSize: 14,
@@ -289,4 +213,3 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
 });
-

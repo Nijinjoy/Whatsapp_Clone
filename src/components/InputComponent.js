@@ -1,92 +1,78 @@
-import React, { useState, useEffect, useRef } from "react";
-import { View, TextInput, StyleSheet, Text, Animated } from "react-native";
+import React, { useState } from "react";
+import { View, TextInput, Text, StyleSheet } from "react-native";
 
-const FloatingLabelInput = ({
+const InputField = ({
     label,
     value,
     onChangeText,
     placeholder,
     secureTextEntry,
     keyboardType = "default",
-    style,
     errorMessage,
+    style,
+    onFocus,
+    onBlur,
 }) => {
     const [isFocused, setIsFocused] = useState(false);
-    const animatedLabelPosition = useRef(new Animated.Value(value ? 1 : 0)).current;
-
-    useEffect(() => {
-        Animated.timing(animatedLabelPosition, {
-            toValue: isFocused || value ? 1 : 0,
-            duration: 200,
-            useNativeDriver: false,
-        }).start();
-    }, [isFocused, value]);
-
-    const labelStyle = {
-        position: "absolute",
-        left: 10,
-        top: animatedLabelPosition.interpolate({
-            inputRange: [0, 1],
-            outputRange: [13, -8],
-        }),
-        fontSize: animatedLabelPosition.interpolate({
-            inputRange: [0, 1],
-            outputRange: [16, 12],
-        }),
-        color: isFocused ? "#007BFF" : "#aaa",
-        backgroundColor: "#fff",
-        paddingHorizontal: 0,
-    };
 
     return (
-        <View style={styles.wrapper}>
-            <View
+        <View style={[styles.wrapper, style]}>
+            {label && <Text style={styles.label}>{label}</Text>}
+            <TextInput
                 style={[
-                    styles.container,
-                    style,
-                    { borderColor: errorMessage ? "red" : isFocused ? "#007BFF" : "#ccc" },
+                    styles.input,
+                    {
+                        borderColor: errorMessage
+                            ? "red"
+                            : isFocused
+                                ? "#007BFF" // Blue border on focus
+                                : "#ccc",
+                        backgroundColor: isFocused ? "#f9f9f9" : "#fff", // Light background on focus
+                    },
                 ]}
-            >
-                <Animated.Text style={labelStyle}>{label}</Animated.Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder={isFocused ? "" : placeholder}
-                    placeholderTextColor="#aaa"
-                    value={value}
-                    onChangeText={onChangeText}
-                    secureTextEntry={secureTextEntry}
-                    keyboardType={keyboardType}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
-                    textAlignVertical="center"
-                />
-            </View>
+                value={value}
+                onChangeText={onChangeText}
+                placeholder={placeholder}
+                placeholderTextColor="#aaa"
+                secureTextEntry={secureTextEntry}
+                keyboardType={keyboardType}
+                onFocus={() => {
+                    setIsFocused(true);
+                    onFocus && onFocus();
+                }}
+                onBlur={() => {
+                    setIsFocused(false);
+                    onBlur && onBlur();
+                }}
+            />
             {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
         </View>
     );
 };
 
-export default FloatingLabelInput;
+export default React.memo(InputField);
 
 const styles = StyleSheet.create({
     wrapper: {
-        marginVertical: 12,
+        marginVertical: 10,
     },
-    container: {
-        position: "relative",
-        borderWidth: 1,
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        backgroundColor: "#fff",
+    label: {
+        fontSize: 14,
+        fontWeight: "500",
+        marginBottom: 6,
+        color: "#333",
     },
     input: {
-        height: 50,
+        height: 48,
+        borderWidth: 1,
+        borderRadius: 8,
+        paddingHorizontal: 12,
         fontSize: 16,
-        color: "black",
+        color: "#000",
     },
     errorText: {
         color: "red",
         fontSize: 12,
-        marginTop: 4, 
+        marginTop: 4,
     },
 });
