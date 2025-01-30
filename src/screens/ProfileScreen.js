@@ -13,13 +13,19 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSelector, useDispatch } from 'react-redux';
+import { login } from '../redux/slices/authSlice';
 
 const ProfileScreen = ({ setIsLoggedIn }) => {
+    const dispatch = useDispatch();
+    const user = useSelector((state) => state.auth.user);
     const [editMode, setEditMode] = useState(false);
     const [profileInfo, setProfileInfo] = useState({
-        name: 'John Doe',
+        name: user?.fullName || 'John Doe', // Use Redux user name
         about: 'Hey there! I am using WhatsApp.',
+        email: user?.email || 'johndoe@example.com',
     });
+
     const [profilePicture, setProfilePicture] = useState(
         'https://i.pravatar.cc/150?img=10'
     );
@@ -28,7 +34,12 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
 
     const handleEditProfile = () => {
         setEditMode(!editMode);
+        if (!editMode) {
+            // Save changes to Redux (optional)
+            dispatch(login({ ...user, fullName: profileInfo.name, email: profileInfo.email }));
+        }
     };
+
 
     const handleProfileChange = (field, value) => {
         setProfileInfo({ ...profileInfo, [field]: value });
@@ -71,7 +82,7 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
                             // Update the login state
                             setIsLoggedIn(false);
                             // Navigate to the login screen
-                            navigation.navigate('LoginScreen');
+                            // navigation.navigate('LoginScreen');
                         } catch (error) {
                             console.error('Error logging out:', error);
                         }
@@ -85,14 +96,10 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
 
     return (
         <View style={styles.container}>
-            {/* Header */}
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Profile</Text>
             </View>
-
-            {/* Content */}
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                {/* Profile Picture */}
                 <View style={styles.profilePictureContainer}>
                     <Image source={{ uri: profilePicture }} style={styles.profilePicture} />
                     <TouchableOpacity
@@ -102,8 +109,6 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
                         <MaterialIcons name="photo-camera" size={20} color="#fff" />
                     </TouchableOpacity>
                 </View>
-
-                {/* Name Section */}
                 <View style={styles.section}>
                     <Text style={styles.sectionLabel}>Name</Text>
                     {editMode ? (
@@ -113,11 +118,25 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
                             onChangeText={(text) => handleProfileChange('name', text)}
                         />
                     ) : (
-                        <Text style={styles.sectionText}>{profileInfo.name}</Text>
+                            <Text style={styles.sectionText}>{user?.fullName || 'John Doe'}</Text>
                     )}
                 </View>
 
-                {/* About Section */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionLabel}>Email</Text>
+                    {editMode ? (
+                        <TextInput
+                            style={styles.input}
+                            value={profileInfo.email}
+                            onChangeText={(text) => handleProfileChange('email', text)}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                        />
+                    ) : (
+                        <Text style={styles.sectionText}>{user?.email || 'johndoe@example.com'}</Text>
+                    )}
+                </View>
+
                 <View style={styles.section}>
                     <Text style={styles.sectionLabel}>About</Text>
                     {editMode ? (
@@ -131,14 +150,12 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
                     )}
                 </View>
 
-                {/* Edit Button */}
                 <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
                     <Text style={styles.editButtonText}>
                         {editMode ? 'Save' : 'Edit Profile'}
                     </Text>
                 </TouchableOpacity>
 
-                {/* Log Out Button */}
                 <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
                     <Text style={styles.logoutButtonText}>Log Out</Text>
                 </TouchableOpacity>
