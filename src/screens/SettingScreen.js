@@ -1,44 +1,44 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, Button } from 'react-native';
-import * as Notifications from 'expo-notifications';
-import { registerForPushNotificationsAsync } from '../utils/notificationService';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, StyleSheet } from 'react-native';
+import { GiftedChat } from 'react-native-gifted-chat';
 
-export default function App() {
-    const notificationListener = useRef();
-    const responseListener = useRef();
+const SettingScreen = () => {
+    const [messages, setMessages] = useState([]);
 
     useEffect(() => {
-        registerForPushNotificationsAsync();
+      setMessages([
+          {
+              _id: 1,
+              text: 'Welcome to the chat!',
+              createdAt: new Date(),
+              user: {
+                  _id: 2,
+                  name: 'Support',
+                  avatar: 'https://placeimg.com/140/140/any',
+              },
+          },
+      ]);
+  }, []);
 
-        notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-            console.log('Notification Received:', notification);
-        });
-
-        responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-            console.log('Notification Clicked:', response);
-        });
-
-        return () => {
-            Notifications.removeNotificationSubscription(notificationListener.current);
-            Notifications.removeNotificationSubscription(responseListener.current);
-        };
+    const onSend = useCallback((newMessages = []) => {
+        setMessages((prevMessages) => GiftedChat.append(prevMessages, newMessages));
     }, []);
 
-    const sendTestNotification = async () => {
-        await Notifications.scheduleNotificationAsync({
-            content: {
-                title: 'Test Notification 📢',
-                body: 'This is a test push notification!',
-                data: { test: 'data' },
-            },
-            trigger: { seconds: 5 },
-        });
-    };
-
     return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Text>Push Notifications in Expo</Text>
-            <Button title="Send Test Notification" onPress={sendTestNotification} />
+        <View style={styles.container}>
+            <GiftedChat
+                messages={messages}
+                onSend={(messages) => onSend(messages)}
+                user={{ _id: 1 }}
+            />
         </View>
     );
-}
+};
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+});
+
+export default SettingScreen;

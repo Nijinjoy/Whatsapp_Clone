@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -10,18 +11,17 @@ import {
     Keyboard,
     TouchableWithoutFeedback,
     Alert,
-    ActivityIndicator
+    ActivityIndicator,
 } from 'react-native';
-import React, { useState } from 'react';
 import { loginIntersection } from '../assets/images';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import { auth, createUserWithEmailAndPassword, firestore } from '../utils/firebaseHelper';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import InputComponent from '../components/InputComponent';
-import { MaterialIcons } from '@expo/vector-icons';
+import { auth, createUserWithEmailAndPassword } from '../utils/firebaseHelper';
 import { useDispatch } from 'react-redux';
 import { login } from '../redux/slices/authSlice';
+import InputComponent from '../components/InputComponent';
+import { MaterialIcons } from '@expo/vector-icons';
+import * as Animatable from 'react-native-animatable';
 
 const RegisterScreen = ({ setIsLoggedIn }) => {
     const navigation = useNavigation();
@@ -68,9 +68,11 @@ const RegisterScreen = ({ setIsLoggedIn }) => {
 
     const handleRegister = async () => {
         if (!fullName || !email || !password || !confirmPassword) {
+            Alert.alert('Error', 'Please fill in all fields');
             return;
         }
         if (password !== confirmPassword) {
+            Alert.alert('Error', 'Passwords do not match');
             return;
         }
         if (emailError || passwordError || confirmPasswordError) {
@@ -83,87 +85,105 @@ const RegisterScreen = ({ setIsLoggedIn }) => {
             const user = userCredential.user;
             const idToken = await user.getIdToken();
             dispatch(login({ fullName, email: user.email, uid: user.uid }));
-            // await AsyncStorage.setItem('idToken', idToken);
             Alert.alert('Success', 'User registered successfully!');
             setIsLoggedIn(true);
         } catch (error) {
             console.error(error);
             Alert.alert('Registration Error', error.message);
-        }
-        finally {
-            setLoading(false); 
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
         <KeyboardAvoidingView
             style={styles.container}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                 <View style={styles.inner}>
                     <LinearGradient colors={['#007BFF', '#0056D2']} style={styles.header}>
-                        <Image source={loginIntersection} style={styles.image} />
-                        <Text style={styles.title}>Welcome!</Text>
-                        <Text style={styles.subtitle}>Create an account to get started</Text>
+                        <Animatable.Image
+                            animation="fadeInDown"
+                            duration={1000}
+                            source={loginIntersection}
+                            style={styles.image}
+                        />
+                        <Animatable.Text animation="fadeInUp" duration={1000} style={styles.title}>
+                            Welcome!
+                        </Animatable.Text>
+                        <Animatable.Text animation="fadeInUp" duration={1000} style={styles.subtitle}>
+                            Create an account to get started
+                        </Animatable.Text>
                     </LinearGradient>
                     <ScrollView contentContainerStyle={styles.scrollContent}>
                         <View style={styles.formSection}>
-                            <InputComponent
-                                value={fullName}
-                                onChangeText={setFullName}
-                                placeholder="Enter your full name"
-                                leftIcon={<MaterialIcons name="person" size={20} color="#007BFF" />}
-                            />
-                            <InputComponent
-                                value={email}
-                                onChangeText={validateEmail}
-                                placeholder="Enter your email"
-                                keyboardType="email-address"
-                                errorMessage={emailError}
-                                leftIcon={<MaterialIcons name="email" size={20} color="#007BFF" />}
-                            />
-                            <InputComponent
-                                value={password}
-                                onChangeText={validatePassword}
-                                placeholder="Enter your password"
-                                secureTextEntry={!passwordVisible}
-                                errorMessage={passwordError}
-                                leftIcon={<MaterialIcons name="lock" size={20} color="#007BFF" />}
-                                rightIcon={passwordVisible ? 'eye-off-outline' : 'eye-outline'}
-                                onRightIconPress={() => setPasswordVisible(!passwordVisible)}
-                            />
-                            <InputComponent
-                                value={confirmPassword}
-                                onChangeText={validateConfirmPassword}
-                                placeholder="Confirm your password"
-                                secureTextEntry={!confirmPasswordVisible}
-                                errorMessage={confirmPasswordError}
-                                leftIcon={<MaterialIcons name="lock" size={20} color="#007BFF" />}
-                                rightIcon={confirmPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
-                                onRightIconPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
-                            />
-                            <TouchableOpacity
-                                style={styles.registerButton}
-                                onPress={handleRegister}
-                                disabled={loading}
-                            >
-                                <LinearGradient colors={['#007BFF', '#0056D2']} style={styles.gradient}>
-                                    {loading ? (
-                                        <ActivityIndicator size="small" color="#fff" />
-                                    ) : (
-                                        <Text style={styles.registerButtonText}>Register</Text>
-                                    )}
-                                </LinearGradient>
-                            </TouchableOpacity>
+                            <Animatable.View animation="fadeInUp" duration={1000} delay={200}>
+                                <InputComponent
+                                    value={fullName}
+                                    onChangeText={setFullName}
+                                    placeholder="Enter your full name"
+                                    leftIcon={<MaterialIcons name="person" size={20} color="#007BFF" />}
+                                />
+                            </Animatable.View>
+                            <Animatable.View animation="fadeInUp" duration={1000} delay={400}>
+                                <InputComponent
+                                    value={email}
+                                    onChangeText={validateEmail}
+                                    placeholder="Enter your email"
+                                    keyboardType="email-address"
+                                    errorMessage={emailError}
+                                    leftIcon={<MaterialIcons name="email" size={20} color="#007BFF" />}
+                                />
+                            </Animatable.View>
+                            <Animatable.View animation="fadeInUp" duration={1000} delay={600}>
+                                <InputComponent
+                                    value={password}
+                                    onChangeText={validatePassword}
+                                    placeholder="Enter your password"
+                                    secureTextEntry={!passwordVisible}
+                                    errorMessage={passwordError}
+                                    leftIcon={<MaterialIcons name="lock" size={20} color="#007BFF" />}
+                                    rightIcon={passwordVisible ? 'eye-off-outline' : 'eye-outline'}
+                                    onRightIconPress={() => setPasswordVisible(!passwordVisible)}
+                                />
+                            </Animatable.View>
+                            <Animatable.View animation="fadeInUp" duration={1000} delay={800}>
+                                <InputComponent
+                                    value={confirmPassword}
+                                    onChangeText={validateConfirmPassword}
+                                    placeholder="Confirm your password"
+                                    secureTextEntry={!confirmPasswordVisible}
+                                    errorMessage={confirmPasswordError}
+                                    leftIcon={<MaterialIcons name="lock" size={20} color="#007BFF" />}
+                                    rightIcon={confirmPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
+                                    onRightIconPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+                                />
+                            </Animatable.View>
+                            <Animatable.View animation="fadeInUp" duration={1000} delay={1000}>
+                                <TouchableOpacity
+                                    style={styles.registerButton}
+                                    onPress={handleRegister}
+                                    disabled={loading}
+                                >
+                                    <LinearGradient colors={['#007BFF', '#0056D2']} style={styles.gradient}>
+                                        {loading ? (
+                                            <ActivityIndicator size="small" color="#fff" />
+                                        ) : (
+                                            <Text style={styles.registerButtonText}>Register</Text>
+                                        )}
+                                    </LinearGradient>
+                                </TouchableOpacity>
+                            </Animatable.View>
 
                         </View>
                     </ScrollView>
-                    <View style={styles.signupPrompt}>
+                    <Animatable.View animation="fadeInUp" duration={1000} delay={1400} style={styles.signupPrompt}>
                         <Text style={styles.signupText}>Already have an account?</Text>
                         <TouchableOpacity onPress={() => navigation.navigate('Login')}>
                             <Text style={styles.signupLink}> Log In</Text>
                         </TouchableOpacity>
-                    </View>
+                    </Animatable.View>
                 </View>
             </TouchableWithoutFeedback>
         </KeyboardAvoidingView>

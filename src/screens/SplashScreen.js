@@ -1,11 +1,28 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Image, StyleSheet, Animated, StatusBar } from 'react-native';
+import { View, Image, StyleSheet, Animated, StatusBar } from 'react-native';
 import { logo } from '../assets/images';
 
 const SplashScreen = () => {
     const animatedValues = Array.from({ length: 8 }, () => useRef(new Animated.Value(0)).current);
+    const logoScale = useRef(new Animated.Value(0)).current;
+    const logoOpacity = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
+        // Logo animation
+        Animated.parallel([
+            Animated.timing(logoScale, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+            Animated.timing(logoOpacity, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+        ]).start();
+
+        // Text animation
         Animated.stagger(150,
             animatedValues.map((value) =>
                 Animated.timing(value, {
@@ -30,13 +47,18 @@ const SplashScreen = () => {
                 outputRange: [0, 1], // Fade-in
             });
 
+            const translateY = animatedValues[index].interpolate({
+                inputRange: [0, 1],
+                outputRange: [50, 0], // Move up
+            });
+
             return (
                 <Animated.Text
                     key={index}
                     style={[
                         styles.text,
                         {
-                            transform: [{ rotateY }],
+                            transform: [{ rotateY }, { translateY }],
                             opacity,
                         },
                     ]}
@@ -50,7 +72,16 @@ const SplashScreen = () => {
     return (
         <View style={styles.container}>
             <StatusBar backgroundColor="#4a90e2" barStyle="light-content" />
-            <Image source={logo} style={styles.logo} />
+            <Animated.Image
+                source={logo}
+                style={[
+                    styles.logo,
+                    {
+                        transform: [{ scale: logoScale }],
+                        opacity: logoOpacity,
+                    },
+                ]}
+            />
             <View style={styles.textContainer}>{renderAnimatedText()}</View>
         </View>
     );
@@ -68,7 +99,7 @@ const styles = StyleSheet.create({
     logo: {
         width: 100,
         height: 100,
-        // marginBottom: 20,
+        marginBottom: 20,
     },
     textContainer: {
         flexDirection: 'row',

@@ -12,6 +12,7 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
+import PhoneAuthScreen from '../screens/PhoneAuthScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -107,6 +108,12 @@ const Routes = () => {
                             options={{ headerShown: false }}
                         >
                             {(props) => <LoginScreen {...props} setIsLoggedIn={setIsLoggedIn} />}
+                        </Stack.Screen>
+                        <Stack.Screen
+                            name="PhoneAuthScreen"
+                            options={{ headerShown: false }}
+                        >
+                            {(props) => <PhoneAuthScreen {...props} setIsLoggedIn={setIsLoggedIn} />}
                         </Stack.Screen>
                     </>
                 ) : (
