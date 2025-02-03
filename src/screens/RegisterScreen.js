@@ -22,7 +22,7 @@ import { login } from '../redux/slices/authSlice';
 import InputComponent from '../components/InputComponent';
 import * as Animatable from 'react-native-animatable';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { validateEmail, validatePassword, validateConfirmPassword, validateRequiredField } from '../utils/validationFile';
+import { child, getDatabase, ref, set } from 'firebase/database';
 
 const RegisterScreen = ({ setIsLoggedIn }) => {
     const navigation = useNavigation();
@@ -77,6 +77,19 @@ const RegisterScreen = ({ setIsLoggedIn }) => {
         if (field === 'confirmPassword') validateConfirmPassword(value);
     };
 
+    const createUser = async (fullName, email, userId) => {
+        const userData = {
+            fullName,
+            email,
+            userId,
+            signUpDate: new Date().toISOString()
+        };
+        const dbRef = ref(getDatabase());
+        const childRef = child(dbRef, `users/${userId}`);
+        await set(childRef, userData);
+        return userData;
+    };
+
     const handleRegister = async () => {
         if (!formData.fullName || !formData.email || !formData.password || !formData.confirmPassword) {
             Alert.alert('Error', 'Please fill in all fields');
@@ -86,10 +99,12 @@ const RegisterScreen = ({ setIsLoggedIn }) => {
             Alert.alert('Error', 'Please fix the errors before submitting');
             return;
         }
+
         setLoading(true);
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
             const user = userCredential.user;
+            await createUser(formData.fullName, formData.email, user.uid);
             const idToken = await user.getIdToken();
             await AsyncStorage.setItem('idToken', idToken);
             dispatch(login({ fullName: formData.fullName, email: user.email, uid: user.uid }));

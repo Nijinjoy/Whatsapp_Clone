@@ -16,4 +16,4 @@ const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);//Initializes Firebase Authentication.
 const firestore = getFirestore(firebaseApp);//Initializes Firestore (Firebase's NoSQL database).You can use this firestore object to perform database operations (e.g., adding, updating, or querying documents).
 
-export { auth, createUserWithEmailAndPassword, firestore }; 
+export { auth, createUserWithEmailAndPassword, firestore, firebaseApp }; 
