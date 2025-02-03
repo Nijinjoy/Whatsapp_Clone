@@ -7,6 +7,8 @@ import {
     TouchableOpacity,
     ScrollView,
     TextInput,
+    KeyboardAvoidingView,
+    Platform,
     Alert,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -99,6 +101,11 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Profile</Text>
             </View>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.container}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+            >
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={styles.profilePictureContainer}>
                     <Image source={{ uri: profilePicture }} style={styles.profilePicture} />
@@ -160,6 +167,7 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
                     <Text style={styles.logoutButtonText}>Log Out</Text>
                 </TouchableOpacity>
             </ScrollView>
+            </KeyboardAvoidingView>
         </View>
     );
 };
@@ -184,6 +192,7 @@ const styles = StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
         padding: 20,
+        paddingBottom: 100, 
     },
     profilePictureContainer: {
         alignItems: 'center',

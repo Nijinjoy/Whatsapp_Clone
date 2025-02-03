@@ -20,71 +20,79 @@ import { auth, createUserWithEmailAndPassword } from '../utils/firebaseHelper';
 import { useDispatch } from 'react-redux';
 import { login } from '../redux/slices/authSlice';
 import InputComponent from '../components/InputComponent';
-import { MaterialIcons } from '@expo/vector-icons';
 import * as Animatable from 'react-native-animatable';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { validateEmail, validatePassword, validateConfirmPassword, validateRequiredField } from '../utils/validationFile';
 
 const RegisterScreen = ({ setIsLoggedIn }) => {
     const navigation = useNavigation();
     const dispatch = useDispatch();
+
     const [loading, setLoading] = useState(false);
-    const [fullName, setFullName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [passwordVisible, setPasswordVisible] = useState(false);
-    const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
-    const [emailError, setEmailError] = useState('');
-    const [passwordError, setPasswordError] = useState('');
-    const [confirmPasswordError, setConfirmPasswordError] = useState('');
+    const [formData, setFormData] = useState({
+        fullName: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
+    });
+    const [visibility, setVisibility] = useState({
+        password: false,
+        confirmPassword: false
+    });
+    const [errors, setErrors] = useState({
+        email: '',
+        password: '',
+        confirmPassword: ''
+    });
 
-    const validateEmail = (text) => {
-        setEmail(text);
+    const validateEmail = (email) => {
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-        if (!emailRegex.test(text)) {
-            setEmailError('Please enter a valid email address');
-        } else {
-            setEmailError('');
-        }
+        setErrors((prev) => ({
+            ...prev,
+            email: emailRegex.test(email) ? '' : 'Please enter a valid email address'
+        }));
     };
 
-    const validatePassword = (text) => {
-        setPassword(text);
+    const validatePassword = (password) => {
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
-        if (!passwordRegex.test(text)) {
-            setPasswordError('Password must be at least 6 characters and contain a number, lowercase and uppercase letter');
-        } else {
-            setPasswordError('');
-        }
+        setErrors((prev) => ({
+            ...prev,
+            password: passwordRegex.test(password)
+                ? ''
+                : 'Password must be at least 6 characters and contain a number, lowercase and uppercase letter'
+        }));
     };
 
-    const validateConfirmPassword = (text) => {
-        setConfirmPassword(text);
-        if (text !== password) {
-            setConfirmPasswordError('Passwords do not match');
-        } else {
-            setConfirmPasswordError('');
-        }
+    const validateConfirmPassword = (confirmPassword) => {
+        setErrors((prev) => ({
+            ...prev,
+            confirmPassword: confirmPassword === formData.password ? '' : 'Passwords do not match'
+        }));
+    };
+
+    const handleInputChange = (field, value) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+        if (field === 'email') validateEmail(value);
+        if (field === 'password') validatePassword(value);
+        if (field === 'confirmPassword') validateConfirmPassword(value);
     };
 
     const handleRegister = async () => {
-        if (!fullName || !email || !password || !confirmPassword) {
+        if (!formData.fullName || !formData.email || !formData.password || !formData.confirmPassword) {
             Alert.alert('Error', 'Please fill in all fields');
             return;
         }
-        if (password !== confirmPassword) {
-            Alert.alert('Error', 'Passwords do not match');
-            return;
-        }
-        if (emailError || passwordError || confirmPasswordError) {
+        if (errors.email || errors.password || errors.confirmPassword) {
             Alert.alert('Error', 'Please fix the errors before submitting');
             return;
         }
         setLoading(true);
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
             const user = userCredential.user;
             const idToken = await user.getIdToken();
-            dispatch(login({ fullName, email: user.email, uid: user.uid }));
+            await AsyncStorage.setItem('idToken', idToken);
+            dispatch(login({ fullName: formData.fullName, email: user.email, uid: user.uid }));
             Alert.alert('Success', 'User registered successfully!');
             setIsLoggedIn(true);
         } catch (error) {
@@ -118,49 +126,21 @@ const RegisterScreen = ({ setIsLoggedIn }) => {
                     </LinearGradient>
                     <ScrollView contentContainerStyle={styles.scrollContent}>
                         <View style={styles.formSection}>
-                            <Animatable.View animation="fadeInUp" duration={1000} delay={200}>
-                                <InputComponent
-                                    value={fullName}
-                                    onChangeText={setFullName}
-                                    placeholder="Enter your full name"
-                                    leftIcon={<MaterialIcons name="person" size={20} color="#007BFF" />}
-                                />
-                            </Animatable.View>
-                            <Animatable.View animation="fadeInUp" duration={1000} delay={400}>
-                                <InputComponent
-                                    value={email}
-                                    onChangeText={validateEmail}
-                                    placeholder="Enter your email"
-                                    keyboardType="email-address"
-                                    errorMessage={emailError}
-                                    leftIcon={<MaterialIcons name="email" size={20} color="#007BFF" />}
-                                />
-                            </Animatable.View>
-                            <Animatable.View animation="fadeInUp" duration={1000} delay={600}>
-                                <InputComponent
-                                    value={password}
-                                    onChangeText={validatePassword}
-                                    placeholder="Enter your password"
-                                    secureTextEntry={!passwordVisible}
-                                    errorMessage={passwordError}
-                                    leftIcon={<MaterialIcons name="lock" size={20} color="#007BFF" />}
-                                    rightIcon={passwordVisible ? 'eye-off-outline' : 'eye-outline'}
-                                    onRightIconPress={() => setPasswordVisible(!passwordVisible)}
-                                />
-                            </Animatable.View>
-                            <Animatable.View animation="fadeInUp" duration={1000} delay={800}>
-                                <InputComponent
-                                    value={confirmPassword}
-                                    onChangeText={validateConfirmPassword}
-                                    placeholder="Confirm your password"
-                                    secureTextEntry={!confirmPasswordVisible}
-                                    errorMessage={confirmPasswordError}
-                                    leftIcon={<MaterialIcons name="lock" size={20} color="#007BFF" />}
-                                    rightIcon={confirmPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
-                                    onRightIconPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
-                                />
-                            </Animatable.View>
-                            <Animatable.View animation="fadeInUp" duration={1000} delay={1000}>
+                            {['fullName', 'email', 'password', 'confirmPassword'].map((field, index) => (
+                                <Animatable.View key={field} animation="fadeInUp" duration={1000} delay={index * 200}>
+                                    <InputComponent
+                                        label={field === 'fullName' ? 'Full Name' : field.charAt(0).toUpperCase() + field.slice(1)}
+                                        placeholder={`Enter your ${field === 'fullName' ? 'full name' : field}`}
+                                        iconName={field === 'email' ? 'email' : field === 'password' ? 'password' : 'lock'}
+                                        value={formData[field]}
+                                        onChangeText={(value) => handleInputChange(field, value)}
+                                        secureTextEntry={field.includes('password') && !visibility[field]}
+                                        errorMessage={errors[field]}
+                                        onRightIconPress={() => setVisibility((prev) => ({ ...prev, [field]: !prev[field] }))}
+                                    />
+                                </Animatable.View>
+                            ))}
+                            <Animatable.View animation="fadeInUp" duration={1000} delay={1200}>
                                 <TouchableOpacity
                                     style={styles.registerButton}
                                     onPress={handleRegister}
@@ -175,15 +155,14 @@ const RegisterScreen = ({ setIsLoggedIn }) => {
                                     </LinearGradient>
                                 </TouchableOpacity>
                             </Animatable.View>
-
+                            <Animatable.View animation="fadeInUp" duration={1000} delay={1400} style={styles.signupPrompt}>
+                                <Text style={styles.signupText}>Already have an account?</Text>
+                                <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')}>
+                                    <Text style={styles.signupLink}> Log In</Text>
+                                </TouchableOpacity>
+                            </Animatable.View>
                         </View>
                     </ScrollView>
-                    <Animatable.View animation="fadeInUp" duration={1000} delay={1400} style={styles.signupPrompt}>
-                        <Text style={styles.signupText}>Already have an account?</Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                            <Text style={styles.signupLink}> Log In</Text>
-                        </TouchableOpacity>
-                    </Animatable.View>
                 </View>
             </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
@@ -211,7 +190,7 @@ const styles = StyleSheet.create({
     },
     image: {
         width: 100,
-        height: 100,
+        height: 80,
         marginBottom: 10,
     },
     title: {
@@ -224,13 +203,13 @@ const styles = StyleSheet.create({
         color: '#fff',
     },
     scrollContent: {
-        padding: 20,
+        padding: 15,
     },
     formSection: {
-        marginTop: 20,
+        marginTop: 0,
     },
     registerButton: {
-        marginTop: 20,
+        marginTop: 10,
         borderRadius: 25,
         overflow: 'hidden',
     },
@@ -247,7 +226,8 @@ const styles = StyleSheet.create({
     signupPrompt: {
         flexDirection: 'row',
         justifyContent: 'center',
-        paddingBottom: 30,
+        paddingBottom: 50,
+        marginTop: 20
     },
     signupText: {
         fontSize: 14,

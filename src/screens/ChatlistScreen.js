@@ -113,8 +113,8 @@ const ChatlistScreen = ({ navigation }) => {
                     }
                 });
             }}
-            friction={2} // Adjust swipe sensitivity
-            overshootFriction={8} // Adjust overshoot effect
+            friction={2}
+            overshootFriction={8} 
         >
             <TouchableOpacity style={styles.chatItem} onPress={() => handleChatNavigation(item)}>
                 <Image source={{ uri: item.avatar }} style={styles.avatar} />

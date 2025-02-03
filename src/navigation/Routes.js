@@ -13,6 +13,7 @@ import RegisterScreen from '../screens/RegisterScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import PhoneAuthScreen from '../screens/PhoneAuthScreen';
+import { useSharedValue, withTiming, useAnimatedStyle } from 'react-native-reanimated';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -41,10 +42,19 @@ const BottomTabs = ({ setIsLoggedIn }) => {
                 tabBarStyle: {
                     height: 65,
                     paddingTop: 5,
+                    position: 'absolute', // Fix the tab bar at the bottom
+                    bottom: 0,            // Position it at the bottom
+                    left: 0,              // Stretch it horizontally
+                    right: 0,
+                    elevation: 0,         // Remove shadow on Android
+                    borderTopWidth: 0,    // Remove top border
+                    backgroundColor: 'white', // Set background color
                 },
                 tabBarLabelStyle: {
                     fontSize: 12,
                 },
+                keyboardHidesTabBar: true,
+                swipeEnabled: true, 
             })}
         >
             <Tab.Screen
@@ -61,12 +71,10 @@ const BottomTabs = ({ setIsLoggedIn }) => {
     );
 };
 
-// Main Routes Component
 const Routes = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isSplashDone, setIsSplashDone] = useState(false);
 
-    // Check login status on app load
     useEffect(() => {
         const checkLoginStatus = async () => {
             try {
@@ -82,12 +90,11 @@ const Routes = () => {
             }
             setTimeout(() => {
                 setIsSplashDone(true);
-            }, 2000); // Simulate a 2-second splash screen
+            }, 2000);
         };
         checkLoginStatus();
     }, []);
 
-    // Show SplashScreen until it's done
     if (!isSplashDone) {
         return <SplashScreen />;
     }
