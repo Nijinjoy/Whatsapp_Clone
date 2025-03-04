@@ -18,7 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { auth, createUserWithEmailAndPassword } from '../utils/firebaseHelper';
 import { useDispatch } from 'react-redux';
-import { login } from '../redux/slices/authSlice';
+// import { login } from '../redux/slices/authSlice';
 import InputComponent from '../components/InputComponent';
 import * as Animatable from 'react-native-animatable';
 import AsyncStorage from '@react-native-async-storage/async-storage';

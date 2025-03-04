@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -16,7 +16,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSelector, useDispatch } from 'react-redux';
-import { login } from '../redux/slices/authSlice';
+// import { login } from '../redux/slices/authSlice';
+import { doc, setDoc } from 'firebase/firestore';
+// import { storage } from '../firebase'; 
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const ProfileScreen = ({ setIsLoggedIn }) => {
     const dispatch = useDispatch();
@@ -31,20 +34,30 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
     const [profilePicture, setProfilePicture] = useState(
         'https://i.pravatar.cc/150?img=10'
     );
+    const [newProfilePicture, setNewProfilePicture] = useState(null); // Store the new picture URI
 
     const navigation = useNavigation(); // Initialize navigation
 
     const handleEditProfile = () => {
         setEditMode(!editMode);
         if (!editMode) {
-            // Save changes to Redux (optional)
             dispatch(login({ ...user, fullName: profileInfo.name, email: profileInfo.email }));
+            saveProfileToFirestore(profileInfo); // Save profile to Firestore when edited
         }
     };
 
-
     const handleProfileChange = (field, value) => {
         setProfileInfo({ ...profileInfo, [field]: value });
+    };
+
+    const saveProfileToFirestore = async (profileData) => {
+        try {
+            const userRef = doc(firestore, "users", user?.id || "default");
+            await setDoc(userRef, profileData, { merge: true });
+            console.log("Profile saved to Firestore!");
+        } catch (error) {
+            console.error("Error saving profile:", error);
+        }
     };
 
     const handleChangeProfilePicture = async () => {
@@ -60,41 +73,62 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
             aspect: [1, 1],
             quality: 1,
         });
+
         if (!result.cancelled) {
-            setProfilePicture(result.uri);
+            // Upload the image to Firestore and get the image URL
+            const uploadedUrl = await uploadToFirestore(result.uri);
+            if (uploadedUrl) {
+                // Set the image URL as the profile picture in the state
+                setProfilePicture(uploadedUrl);
+            }
         }
     };
 
-    const handleLogout = async () => {
-        Alert.alert(
-            'Log Out',
-            'Are you sure you want to log out?',
-            [
-                {
-                    text: 'Cancel',
-                    style: 'cancel',
-                },
-                {
-                    text: 'Log Out',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            // Clear the token from AsyncStorage
-                            await AsyncStorage.removeItem('idToken');
-                            // Update the login state
-                            setIsLoggedIn(false);
-                            // Navigate to the login screen
-                            // navigation.navigate('LoginScreen');
-                        } catch (error) {
-                            console.error('Error logging out:', error);
-                        }
-                    },
-                },
-            ],
-            { cancelable: true }
-        );
+
+    const uploadProfilePicture = async () => {
+        if (!newProfilePicture) {
+            return; // No new picture selected
+        }
+        const downloadUrl = await uploadToFirebase(newProfilePicture);
+        if (downloadUrl) {
+            setProfilePicture(downloadUrl);
+            saveProfileToFirestore({ ...profileInfo, profilePicture: downloadUrl }); // Save updated profile with the new picture
+        }
+    };
+    const uploadToFirestore = async (uri) => {
+        try {
+            // Convert image URI to blob and upload to Firebase Storage
+            const response = await fetch(uri);
+            const blob = await response.blob();
+            const fileName = `profile_pictures/${user?.id || "default"}_${Date.now()}.jpg`;
+
+            // Here, Firebase storage will still be used temporarily
+            const storageRef = ref(storage, fileName);
+            await uploadBytes(storageRef, blob);
+
+            const downloadUrl = await getDownloadURL(storageRef); // Get the image URL
+
+            // Save the image URL to Firestore
+            const db = getFirestore();
+            const userRef = doc(db, 'users', user?.id || 'default');
+            await setDoc(userRef, { profilePicture: downloadUrl }, { merge: true });
+
+            // Update the local state with the new profile picture URL
+            setProfilePicture(downloadUrl);
+
+            return downloadUrl;
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            Alert.alert('Upload Failed', 'An error occurred while uploading the image.');
+            return null;
+        }
     };
 
+    useEffect(() => {
+        if (newProfilePicture) {
+            uploadProfilePicture(); // Automatically upload when a new picture is selected
+        }
+    }, [newProfilePicture]);
 
     return (
         <View style={styles.container}>
@@ -111,7 +145,10 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
                     <Image source={{ uri: profilePicture }} style={styles.profilePicture} />
                     <TouchableOpacity
                         style={styles.editPictureButton}
-                        onPress={handleChangeProfilePicture}
+                            onPress={async () => {
+                                console.log('Button pressed'); // Debugging line
+                                await handleChangeProfilePicture();
+                            }}
                     >
                         <MaterialIcons name="photo-camera" size={20} color="#fff" />
                     </TouchableOpacity>
@@ -161,16 +198,13 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
                     <Text style={styles.editButtonText}>
                         {editMode ? 'Save' : 'Edit Profile'}
                     </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                    <Text style={styles.logoutButtonText}>Log Out</Text>
-                </TouchableOpacity>
+                    </TouchableOpacity>
             </ScrollView>
             </KeyboardAvoidingView>
         </View>
     );
 };
+
 
 const styles = StyleSheet.create({
     container: {

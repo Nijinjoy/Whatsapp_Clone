@@ -14,8 +14,8 @@ const InputField = ({
     onFocus,
     onBlur,
     iconName,
-    iconSize = 24, // Default icon size
-    iconColor = "#888", // Default icon color
+    iconSize = 24,
+    iconColor = "#888",
 }) => {
     const [isFocused, setIsFocused] = useState(false);
 

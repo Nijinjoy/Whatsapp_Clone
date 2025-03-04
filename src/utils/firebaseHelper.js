@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAZJj-w35T2kWu7IRtPOnE84lOn6RIWwF0",
@@ -15,5 +16,6 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);//Initializes Firebase Authentication.
 const firestore = getFirestore(firebaseApp);//Initializes Firestore (Firebase's NoSQL database).You can use this firestore object to perform database operations (e.g., adding, updating, or querying documents).
+const storage = getStorage(firebaseApp);
 
-export { auth, createUserWithEmailAndPassword, firestore, firebaseApp }; 
+export { auth, createUserWithEmailAndPassword, firestore, firebaseApp, storage }; 

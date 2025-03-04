@@ -16,14 +16,15 @@ import { loginIntersection } from '../assets/images';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
+import { FontAwesome } from '@expo/vector-icons';
 
 const LoginScreen = () => {
-    const navigation = useNavigation()
+    const navigation = useNavigation();
     const [passwordVisible, setPasswordVisible] = useState(false);
 
     const onNavigate = () => {
-        navigation.navigate("RegisterScreen")
-    }
+        navigation.navigate("RegisterScreen");
+    };
 
     return (
         <KeyboardAvoidingView
@@ -31,14 +32,11 @@ const LoginScreen = () => {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                 <View style={styles.inner}>
-                    {/* Header Section */}
                     <LinearGradient colors={['#007BFF', '#0056D2']} style={styles.header}>
                         <Image source={loginIntersection} style={styles.image} />
                         <Text style={styles.title}>Welcome Back!</Text>
                         <Text style={styles.subtitle}>Sign in to continue</Text>
                     </LinearGradient>
-
-                    {/* Form Section */}
                     <ScrollView contentContainerStyle={styles.scrollContent}>
                         <View style={styles.formSection}>
                             <Text style={styles.formTitle}>Login to your account</Text>
@@ -83,8 +81,21 @@ const LoginScreen = () => {
                             <TouchableOpacity style={styles.loginButton}>
                                 <Text style={styles.loginButtonText}>Log In</Text>
                             </TouchableOpacity>
+
                             <TouchableOpacity>
                                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                            </TouchableOpacity>
+
+                            <Text style={styles.orText}>OR</Text>
+
+                            <TouchableOpacity style={styles.googleButton}>
+                                <FontAwesome name="google" size={20} color="#fff" />
+                                <Text style={styles.socialButtonText}>Sign in with Google</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={styles.facebookButton}>
+                                <FontAwesome name="facebook" size={20} color="#fff" />
+                                <Text style={styles.socialButtonText}>Sign in with Facebook</Text>
                             </TouchableOpacity>
                         </View>
                     </ScrollView>
@@ -185,6 +196,36 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#007BFF',
         textAlign: 'center',
+    },
+    orText: {
+        textAlign: 'center',
+        marginVertical: 20,
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#555',
+    },
+    googleButton: {
+        flexDirection: 'row',
+        backgroundColor: '#DB4437',
+        paddingVertical: 12,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 15,
+    },
+    facebookButton: {
+        flexDirection: 'row',
+        backgroundColor: '#1877F2',
+        paddingVertical: 12,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    socialButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginLeft: 10,
     },
     signupPrompt: {
         flexDirection: 'row',
