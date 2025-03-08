@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "230295587212",
+    "firebase_url": "https://chat-application-41487-default-rtdb.firebaseio.com",
+    "project_id": "chat-application-41487",
+    "storage_bucket": "chat-application-41487.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:230295587212:android:2e50efd3087edd1977eea9",
+        "android_client_info": {
+          "package_name": "com.nijin.whatsappclone"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "230295587212-bria083856konofcqhv37ogl0h89p1kc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nijin.whatsappclone",
+            "certificate_hash": "c6e17d9e5965ee8bbc0801a897a341e3fb935e00"
+          }
+        },
+        {
+          "client_id": "230295587212-rnkqjlftkchapmujphsn1dqejdpf77ag.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXgrz6MWa5tvDs--Hb0BHBhH8gjJUN8Qk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "230295587212-86ktev373pcb868rd9dj15co971k175e.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

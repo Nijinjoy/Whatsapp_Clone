@@ -22,20 +22,23 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.nijin.whatsappclone",
-      "permissions": ["NOTIFICATIONS"]
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "NOTIFICATIONS"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "eas": {
-        "projectId": "3e9a1d80-4c63-4f2e-81c4-e173ae5b0870"
-      },
       "googleAuth": {
         "expoClientId": "YOUR_EXPO_CLIENT_ID.apps.googleusercontent.com",
         "iosClientId": "YOUR_IOS_CLIENT_ID.apps.googleusercontent.com",
         "androidClientId": "YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com",
         "webClientId": "230295587212-rnkqjlftkchapmujphsn1dqejdpf77ag.apps.googleusercontent.com"
+      },
+      "eas": {
+        "projectId": "3e9a1d80-4c63-4f2e-81c4-e173ae5b0870"
       }
     },
     "owner": "impetors"

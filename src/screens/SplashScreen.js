@@ -31,7 +31,7 @@ const SplashScreen = () => {
             <Animated.View style={{ opacity: fadeAnim }}>
                 <Image source={logo} style={styles.logo} resizeMode="contain" />
             </Animated.View>
-            <Text style={styles.appName}>Travello</Text>
+            <Text style={styles.appName}>WanderChat</Text>
             <Text style={styles.tagline}>Connect. Chat. Explore.</Text>
             <View style={styles.progressBarContainer}>
                 <Animated.View
@@ -55,18 +55,19 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#6A11CB', // Solid color or gradient background
+        backgroundColor: '#1A1A2E',
+
     },
     logo: {
-        width: 150,
-        height: 150,
+        width: 110,
+        height: 120,
         marginBottom: 20,
     },
     appName: {
         fontSize: 32,
         fontWeight: 'bold',
         color: '#FFFFFF',
-        fontFamily: 'Poppins-Bold', // Use a custom font if available
+        fontFamily: 'Poppins-Bold', 
     },
     tagline: {
         fontSize: 16,
