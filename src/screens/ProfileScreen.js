@@ -1,294 +1,180 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    Image,
-    TouchableOpacity,
-    ScrollView,
-    TextInput,
-    KeyboardAvoidingView,
-    Platform,
-    Alert,
+    View, Text, Image, TextInput, TouchableOpacity, StyleSheet, useColorScheme, KeyboardAvoidingView, ScrollView, Platform
 } from 'react-native';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useSelector, useDispatch } from 'react-redux';
-// import { login } from '../redux/slices/authSlice';
-import { doc, setDoc } from 'firebase/firestore';
-// import { storage } from '../firebase'; 
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { logo } from '../assets/images';
 
-const ProfileScreen = ({ setIsLoggedIn }) => {
-    const dispatch = useDispatch();
-    const user = useSelector((state) => state.auth.user);
-    const [editMode, setEditMode] = useState(false);
-    const [profileInfo, setProfileInfo] = useState({
-        name: user?.fullName || 'John Doe', // Use Redux user name
-        about: 'Hey there! I am using WhatsApp.',
-        email: user?.email || 'johndoe@example.com',
-    });
+const ProfileScreen = () => {
+    const [name, setName] = useState('John Doe');
+    const [about, setAbout] = useState('Hey there! I am using WhatsApp');
+    const [profileImage, setProfileImage] = useState(null);
+    const colorScheme = useColorScheme(); // Detect dark mode
 
-    const [profilePicture, setProfilePicture] = useState(
-        'https://i.pravatar.cc/150?img=10'
-    );
-    const [newProfilePicture, setNewProfilePicture] = useState(null); // Store the new picture URI
-
-    const navigation = useNavigation(); // Initialize navigation
-
-    const handleEditProfile = () => {
-        setEditMode(!editMode);
-        if (!editMode) {
-            dispatch(login({ ...user, fullName: profileInfo.name, email: profileInfo.email }));
-            saveProfileToFirestore(profileInfo); // Save profile to Firestore when edited
-        }
-    };
-
-    const handleProfileChange = (field, value) => {
-        setProfileInfo({ ...profileInfo, [field]: value });
-    };
-
-    const saveProfileToFirestore = async (profileData) => {
-        try {
-            const userRef = doc(firestore, "users", user?.id || "default");
-            await setDoc(userRef, profileData, { merge: true });
-            console.log("Profile saved to Firestore!");
-        } catch (error) {
-            console.error("Error saving profile:", error);
-        }
-    };
-
-    const handleChangeProfilePicture = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-            alert('Sorry, we need camera roll permissions to make this work!');
-            return;
-        }
-
-        const result = await ImagePicker.launchImageLibraryAsync({
+    const pickImage = async () => {
+        let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [1, 1],
             quality: 1,
         });
 
-        if (!result.cancelled) {
-            // Upload the image to Firestore and get the image URL
-            const uploadedUrl = await uploadToFirestore(result.uri);
-            if (uploadedUrl) {
-                // Set the image URL as the profile picture in the state
-                setProfilePicture(uploadedUrl);
-            }
+        if (!result.canceled) {
+            setProfileImage(result.assets[0].uri);
         }
     };
-
-
-    const uploadProfilePicture = async () => {
-        if (!newProfilePicture) {
-            return; // No new picture selected
-        }
-        const downloadUrl = await uploadToFirebase(newProfilePicture);
-        if (downloadUrl) {
-            setProfilePicture(downloadUrl);
-            saveProfileToFirestore({ ...profileInfo, profilePicture: downloadUrl }); // Save updated profile with the new picture
-        }
-    };
-    const uploadToFirestore = async (uri) => {
-        try {
-            // Convert image URI to blob and upload to Firebase Storage
-            const response = await fetch(uri);
-            const blob = await response.blob();
-            const fileName = `profile_pictures/${user?.id || "default"}_${Date.now()}.jpg`;
-
-            // Here, Firebase storage will still be used temporarily
-            const storageRef = ref(storage, fileName);
-            await uploadBytes(storageRef, blob);
-
-            const downloadUrl = await getDownloadURL(storageRef); // Get the image URL
-
-            // Save the image URL to Firestore
-            const db = getFirestore();
-            const userRef = doc(db, 'users', user?.id || 'default');
-            await setDoc(userRef, { profilePicture: downloadUrl }, { merge: true });
-
-            // Update the local state with the new profile picture URL
-            setProfilePicture(downloadUrl);
-
-            return downloadUrl;
-        } catch (error) {
-            console.error('Error uploading image:', error);
-            Alert.alert('Upload Failed', 'An error occurred while uploading the image.');
-            return null;
-        }
-    };
-
-    useEffect(() => {
-        if (newProfilePicture) {
-            uploadProfilePicture(); // Automatically upload when a new picture is selected
-        }
-    }, [newProfilePicture]);
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Profile</Text>
-            </View>
+            {/* Main Content */}
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.container}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+                style={styles.keyboardAvoidingContainer}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0} // Adjust this value based on your bottom tab height
             >
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={styles.profilePictureContainer}>
-                    <Image source={{ uri: profilePicture }} style={styles.profilePicture} />
-                    <TouchableOpacity
-                        style={styles.editPictureButton}
-                            onPress={async () => {
-                                console.log('Button pressed'); // Debugging line
-                                await handleChangeProfilePicture();
-                            }}
-                    >
-                        <MaterialIcons name="photo-camera" size={20} color="#fff" />
+                <ScrollView
+                    contentContainerStyle={styles.scrollContainer}
+                    keyboardShouldPersistTaps="handled" // Dismiss keyboard on tap outside
+                >
+                    {/* Profile Picture */}
+                    <TouchableOpacity onPress={pickImage} style={styles.imageContainer}>
+                        <Image
+                            source={logo}
+                            style={styles.profileImage}
+                        />
+                        <View style={styles.cameraIcon}>
+                            <Ionicons name="camera" size={20} color="white" />
+                        </View>
                     </TouchableOpacity>
-                </View>
-                <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>Name</Text>
-                    {editMode ? (
+
+                    {/* Name Section */}
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Name</Text>
+                        <View style={styles.row}>
                         <TextInput
                             style={styles.input}
-                            value={profileInfo.name}
-                            onChangeText={(text) => handleProfileChange('name', text)}
+                                value={name}
+                                onChangeText={setName}
+                                placeholder="Enter your name"
+                                placeholderTextColor="gray"
                         />
-                    ) : (
-                            <Text style={styles.sectionText}>{user?.fullName || 'John Doe'}</Text>
-                    )}
+                            <Ionicons name="pencil" size={18} color="gray" />
+                        </View>
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>Email</Text>
-                    {editMode ? (
+                    {/* About Section */}
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>About</Text>
+                        <View style={styles.row}>
                         <TextInput
                             style={styles.input}
-                            value={profileInfo.email}
-                            onChangeText={(text) => handleProfileChange('email', text)}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
+                                value={about}
+                                onChangeText={setAbout}
+                                placeholder="Enter your about status"
+                                placeholderTextColor="gray"
                         />
-                    ) : (
-                        <Text style={styles.sectionText}>{user?.email || 'johndoe@example.com'}</Text>
-                    )}
+                            <Ionicons name="pencil" size={18} color="gray" />
+                        </View>
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>About</Text>
-                    {editMode ? (
-                        <TextInput
-                            style={styles.input}
-                            value={profileInfo.about}
-                            onChangeText={(text) => handleProfileChange('about', text)}
-                        />
-                    ) : (
-                        <Text style={styles.sectionText}>{profileInfo.about}</Text>
-                    )}
-                </View>
-
-                <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-                    <Text style={styles.editButtonText}>
-                        {editMode ? 'Save' : 'Edit Profile'}
-                    </Text>
-                    </TouchableOpacity>
+                    {/* Phone Number */}
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Phone</Text>
+                        <View style={styles.row}>
+                            <FontAwesome name="phone" size={16} color="gray" />
+                            <Text style={styles.phoneText}>+91 9876543210</Text>
+                        </View>
+                    </View>
             </ScrollView>
             </KeyboardAvoidingView>
+
+            {/* Bottom Tab */}
+            <View style={styles.bottomTab}>
+                <Text style={styles.bottomTabText}>Bottom Tab</Text>
+            </View>
         </View>
     );
 };
 
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#f9f9f9',
     },
-    header: {
-        backgroundColor: '#075E54',
-        paddingVertical: 15,
-        paddingHorizontal: 20,
-        justifyContent: 'center',
-        elevation: 4,
+    keyboardAvoidingContainer: {
+        flex: 1,
     },
-    headerTitle: {
-        fontSize: 20,
-        color: '#fff',
-        fontWeight: 'bold',
-    },
-    scrollContent: {
-        flexGrow: 1,
-        padding: 20,
-        paddingBottom: 100, 
-    },
-    profilePictureContainer: {
+    scrollContainer: {
         alignItems: 'center',
+        padding: 20,
+        paddingBottom: 100, // Add padding to avoid overlap with the bottom tab
+    },
+    imageContainer: {
+        position: 'relative',
         marginBottom: 20,
     },
-    profilePicture: {
-        width: 150,
-        height: 150,
-        borderRadius: 75,
-        borderWidth: 2,
-        borderColor: '#075E54',
+    profileImage: {
+        width: 130,
+        height: 130,
+        borderRadius: 65,
+        backgroundColor: '#e0e0e0',
     },
-    editPictureButton: {
+    cameraIcon: {
         position: 'absolute',
-        bottom: 0,
-        right: 100,
-        backgroundColor: '#075E54',
-        padding: 8,
-        borderRadius: 20,
+        bottom: 5,
+        right: 5,
+        backgroundColor: '#25D366',
+        borderRadius: 18,
+        padding: 6,
     },
-    section: {
-        marginBottom: 20,
+    inputContainer: {
+        width: '100%',
+        backgroundColor: 'white',
+        padding: 12,
+        marginBottom: 12,
+        borderRadius: 12,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 3,
+        elevation: 3,
     },
-    sectionLabel: {
-        fontSize: 16,
-        color: '#666',
+    label: {
+        fontSize: 14,
+        color: 'gray',
         marginBottom: 5,
     },
-    sectionText: {
-        fontSize: 18,
-        color: '#000',
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
     input: {
-        fontSize: 18,
-        color: '#000',
-        borderBottomWidth: 1,
-        borderColor: '#ccc',
-        paddingBottom: 5,
-    },
-    editButton: {
-        backgroundColor: '#075E54',
-        padding: 15,
-        borderRadius: 5,
-        alignItems: 'center',
-        marginTop: 20,
-    },
-    editButtonText: {
         fontSize: 16,
-        color: '#fff',
-        fontWeight: 'bold',
+        color: 'black',
+        flex: 1,
     },
-    logoutButton: {
-        backgroundColor: '#FF3B30',
-        padding: 15,
-        borderRadius: 5,
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    logoutButtonText: {
+    phoneText: {
         fontSize: 16,
-        color: '#fff',
-        fontWeight: 'bold',
+        color: 'black',
+        marginLeft: 10,
+    },
+    bottomTab: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 60, // Adjust height as needed
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderTopWidth: 1,
+        borderTopColor: '#e0e0e0',
+    },
+    bottomTabText: {
+        fontSize: 16,
+        color: 'black',
     },
 });
 
