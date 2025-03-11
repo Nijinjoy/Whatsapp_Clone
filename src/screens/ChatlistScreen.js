@@ -19,6 +19,7 @@ const chatData = [
         lastMessage: 'Hey, how are you?',
         time: '12:30 PM',
         avatar: 'https://randomuser.me/api/portraits/men/1.jpg',
+        unread: true,
     },
     {
         id: '2',
@@ -26,6 +27,7 @@ const chatData = [
         lastMessage: 'Let’s catch up tomorrow.',
         time: '11:45 AM',
         avatar: 'https://randomuser.me/api/portraits/women/2.jpg',
+        unread: false,
     },
     {
         id: '3',
@@ -33,20 +35,23 @@ const chatData = [
         lastMessage: 'Got it. Thanks!',
         time: '10:15 AM',
         avatar: 'https://randomuser.me/api/portraits/men/3.jpg',
+        unread: true,
     },
     {
         id: '4',
-        name: 'Alex Johnson',
-        lastMessage: 'Got it. Thanks!',
-        time: '10:15 AM',
+        name: 'Emily Davis',
+        lastMessage: 'See you soon!',
+        time: '09:30 AM',
         avatar: 'https://randomuser.me/api/portraits/women/4.jpg',
+        unread: false,
     },
     {
         id: '5',
-        name: 'Alex Johnson',
-        lastMessage: 'Got it. Thanks!',
-        time: '10:15 AM',
-        avatar: 'https://randomuser.me/api/portraits/men/3.jpg',
+        name: 'Michael Brown',
+        lastMessage: 'Sounds good!',
+        time: '08:15 AM',
+        avatar: 'https://randomuser.me/api/portraits/men/5.jpg',
+        unread: false,
     },
 ];
 
@@ -114,9 +119,13 @@ const ChatlistScreen = ({ navigation }) => {
                 });
             }}
             friction={2}
-            overshootFriction={8} 
+            overshootFriction={8}
         >
-            <TouchableOpacity style={styles.chatItem} onPress={() => handleChatNavigation(item)}>
+            <TouchableOpacity
+                style={styles.chatItem}
+                onPress={() => handleChatNavigation(item)}
+                activeOpacity={0.7}
+            >
                 <Image source={{ uri: item.avatar }} style={styles.avatar} />
                 <View style={styles.chatInfo}>
                     <Text style={styles.chatName}>{item.name}</Text>
@@ -124,7 +133,10 @@ const ChatlistScreen = ({ navigation }) => {
                         {item.lastMessage}
                     </Text>
                 </View>
-                <Text style={styles.chatTime}>{item.time}</Text>
+                <View style={styles.timeUnreadContainer}>
+                    <Text style={styles.chatTime}>{item.time}</Text>
+                    {item.unread && <View style={styles.unreadBadge} />}
+                </View>
             </TouchableOpacity>
         </Swipeable>
     );
@@ -135,8 +147,12 @@ const ChatlistScreen = ({ navigation }) => {
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Chats</Text>
                 <View style={styles.headerIcons}>
-                    <MaterialIcons name="search" size={24} color="#fff" style={styles.icon} />
-                    <MaterialIcons name="more-vert" size={24} color="#fff" />
+                    <TouchableOpacity>
+                        <MaterialIcons name="search" size={24} color="#fff" style={styles.icon} />
+                    </TouchableOpacity>
+                    <TouchableOpacity>
+                        <MaterialIcons name="more-vert" size={24} color="#fff" />
+                    </TouchableOpacity>
                 </View>
             </View>
             <FlatList
@@ -152,7 +168,7 @@ const ChatlistScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#f5f5f5',
     },
     header: {
         height: 60,
@@ -161,7 +177,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 15,
-        paddingTop: 0,
+        elevation: 4,
     },
     headerTitle: {
         fontSize: 20,
@@ -176,15 +192,18 @@ const styles = StyleSheet.create({
         marginRight: 15,
     },
     chatList: {
-        paddingVertical: 0,
+        paddingVertical: 10,
     },
     chatItem: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 15,
-        paddingVertical: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        paddingVertical: 12,
+        marginHorizontal: 10,
+        marginVertical: 5,
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        elevation: 2,
     },
     avatar: {
         width: 50,
@@ -197,27 +216,40 @@ const styles = StyleSheet.create({
     },
     chatName: {
         fontSize: 16,
-        fontWeight: 'bold',
-        color: '#000',
+        fontWeight: '600',
+        color: '#333',
     },
     chatMessage: {
         fontSize: 14,
-        color: '#555',
-        marginTop: 2,
+        color: '#666',
+        marginTop: 4,
+    },
+    timeUnreadContainer: {
+        alignItems: 'flex-end',
     },
     chatTime: {
         fontSize: 12,
         color: '#888',
     },
+    unreadBadge: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#25D366',
+        marginTop: 4,
+    },
     actionsContainer: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
         alignItems: 'center',
+        marginVertical: 5,
+        borderRadius: 10,
+        overflow: 'hidden',
     },
     actionButton: {
         justifyContent: 'center',
         alignItems: 'center',
-        width: 70,
+        width: 80,
         height: '100%',
     },
     editButton: {
