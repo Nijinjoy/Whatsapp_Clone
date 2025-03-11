@@ -82,8 +82,10 @@ const ChatlistScreen = ({ navigation }) => {
                         style={[styles.actionButton, styles.editButton]}
                         onPress={() => handleEdit(item)}
                     >
-                        <MaterialIcons name="edit" size={24} color="#fff" />
-                        <Text style={styles.actionText}>Edit</Text>
+                        <View style={styles.buttonContent}>
+                            <MaterialIcons name="edit" size={24} color="#fff" />
+                            <Text style={styles.actionText}>Edit</Text>
+                        </View>
                     </TouchableOpacity>
                 </Animated.View>
                 <Animated.View style={{ transform: [{ scale }], opacity }}>
@@ -91,8 +93,10 @@ const ChatlistScreen = ({ navigation }) => {
                         style={[styles.actionButton, styles.deleteButton]}
                         onPress={() => handleDelete(item.id)}
                     >
-                        <MaterialIcons name="delete" size={24} color="#fff" />
-                        <Text style={styles.actionText}>Delete</Text>
+                        <View style={styles.buttonContent}>
+                            <MaterialIcons name="delete" size={24} color="#fff" />
+                            <Text style={styles.actionText}>Delete</Text>
+                        </View>
                     </TouchableOpacity>
                 </Animated.View>
             </View>
@@ -241,6 +245,7 @@ const styles = StyleSheet.create({
     actionsContainer: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
+        margin: 10,
         alignItems: 'center',
         marginVertical: 5,
         borderRadius: 10,
@@ -251,6 +256,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         width: 80,
         height: '100%',
+        borderRadius: 10,
+        marginHorizontal: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.8,
+        shadowRadius: 2,
+        elevation: 5,
     },
     editButton: {
         backgroundColor: '#4CAF50',
@@ -258,10 +270,14 @@ const styles = StyleSheet.create({
     deleteButton: {
         backgroundColor: '#F44336',
     },
+    buttonContent: {
+        alignItems: 'center',
+    },
     actionText: {
         color: '#fff',
         fontSize: 12,
         marginTop: 4,
+        fontWeight: 'bold',
     },
 });
 
