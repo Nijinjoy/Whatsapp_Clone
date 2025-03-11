@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import {
+    View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { auth, createUserWithEmailAndPassword } from '../utils/firebaseHelper'
+import { auth, createUserWithEmailAndPassword } from '../utils/firebaseHelper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const RegisterScreen = ({ navigation, setIsLoggedIn }) => {
@@ -10,10 +12,11 @@ const RegisterScreen = ({ navigation, setIsLoggedIn }) => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [loading, setLoading] = useState(false); // Added loading state
 
     const handleRegister = async () => {
         console.log("Register button clicked");
-
         if (!fullName.trim() || !email.trim() || !password || !confirmPassword) {
             Alert.alert('Error', 'All fields are required');
             return;
@@ -26,39 +29,27 @@ const RegisterScreen = ({ navigation, setIsLoggedIn }) => {
             Alert.alert('Error', 'Passwords do not match');
             return;
         }
-
         setLoading(true);
         console.log("Starting Firebase registration...");
-
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password.trim());
             console.log("User registered:", userCredential);
-
             if (!userCredential.user) {
                 throw new Error("User registration failed");
             }
-
-            const idToken = await userCredential.user.getIdToken(); // FIXED!
+            const idToken = await userCredential.user.getIdToken();
             const refreshToken = userCredential.user.refreshToken;
             const userId = userCredential.user.uid;
             const userEmail = userCredential.user.email;
-
             console.log("Saving tokens to AsyncStorage...");
-
             await Promise.all([
                 AsyncStorage.setItem('userToken', idToken),
                 AsyncStorage.setItem('refreshToken', refreshToken),
                 AsyncStorage.setItem('userId', userId),
                 AsyncStorage.setItem('userEmail', userEmail)
             ]);
-
-            console.log("User successfully logged in!");
+            console.log("User successfully registered and logged in!");
             setIsLoggedIn(true);
-
-            // Debug AsyncStorage storage
-            const storedToken = await AsyncStorage.getItem('userToken');
-            console.log("Stored userToken:", storedToken);
-
         } catch (error) {
             console.error("Firebase Error:", error);
 
@@ -76,7 +67,6 @@ const RegisterScreen = ({ navigation, setIsLoggedIn }) => {
             setLoading(false);
         }
     };
-
 
     return (
         <View style={styles.container}>
@@ -115,17 +105,17 @@ const RegisterScreen = ({ navigation, setIsLoggedIn }) => {
                 <TextInput
                     style={styles.passwordInput}
                     placeholder="Confirm Password"
-                    secureTextEntry={!showPassword}
+                    secureTextEntry={!showConfirmPassword}
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                 />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                    <Ionicons name={showPassword ? "eye-off" : "eye"} size={22} color="gray" />
+                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                    <Ionicons name={showConfirmPassword ? "eye-off" : "eye"} size={22} color="gray" />
                 </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.button} onPress={handleRegister}>
-                <Text style={styles.buttonText}>Sign Up</Text>
+            <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
+                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign Up</Text>}
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')}>
@@ -138,25 +128,23 @@ const RegisterScreen = ({ navigation, setIsLoggedIn }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
         padding: 20,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: '#fff',
+        justifyContent: 'center',
     },
     title: {
         fontSize: 24,
         fontWeight: 'bold',
+        textAlign: 'center',
         marginBottom: 20,
-        color: '#333',
     },
     input: {
         width: '100%',
         height: 50,
         borderWidth: 1,
         borderColor: '#ccc',
-        borderRadius: 10,
-        paddingHorizontal: 15,
-        backgroundColor: '#fff',
+        borderRadius: 8,
+        paddingHorizontal: 10,
         marginBottom: 10,
     },
     passwordContainer: {
@@ -166,31 +154,31 @@ const styles = StyleSheet.create({
         height: 50,
         borderWidth: 1,
         borderColor: '#ccc',
-        borderRadius: 10,
-        paddingHorizontal: 15,
-        backgroundColor: '#fff',
+        borderRadius: 8,
+        paddingHorizontal: 10,
         marginBottom: 10,
     },
     passwordInput: {
         flex: 1,
+        height: '100%',
     },
     button: {
-        backgroundColor: '#007bff',
-        paddingVertical: 12,
-        width: '100%',
-        borderRadius: 10,
+        backgroundColor: '#4CAF50',
+        padding: 15,
+        borderRadius: 8,
         alignItems: 'center',
         marginTop: 10,
     },
     buttonText: {
         color: '#fff',
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: 'bold',
     },
     loginText: {
         marginTop: 15,
-        color: '#007bff',
-        fontSize: 16,
+        textAlign: 'center',
+        color: '#007BFF',
+        fontSize: 14,
     },
 });
 

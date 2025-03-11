@@ -3,8 +3,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { NavigationContainer } from '@react-navigation/native';
-
-// Import Screens
 import ChatScreen from '../screens/ChatScreen';
 import SettingScreen from '../screens/SettingScreen';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -49,7 +47,7 @@ const BottomTabs = ({ setIsLoggedIn }) => (
                 backgroundColor: 'white',
             },
             tabBarLabelStyle: { fontSize: 12 },
-            keyboardHidesTabBar: true,
+            keyboardHidesTabBar: false,
         })}
     >
         <Tab.Screen name="Chats" component={ChatlistScreen} />
@@ -107,14 +105,6 @@ const Routes = () => {
 
         checkLoginStatus();
     }, []);
-
-    // if (isLoading) {
-    //     return (
-    //         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    //             <ActivityIndicator size="large" color="green" />
-    //         </View>
-    //     );
-    // }
 
     return (
         <NavigationContainer>
