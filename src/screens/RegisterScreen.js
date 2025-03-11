@@ -1,256 +1,197 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    Image,
-    TouchableOpacity,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Keyboard,
-    TouchableWithoutFeedback,
-    Alert,
-    ActivityIndicator,
-} from 'react-native';
-import { loginIntersection } from '../assets/images';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
-import { auth, createUserWithEmailAndPassword } from '../utils/firebaseHelper';
-import { useDispatch } from 'react-redux';
-// import { login } from '../redux/slices/authSlice';
-import InputComponent from '../components/InputComponent';
-import * as Animatable from 'react-native-animatable';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { auth, createUserWithEmailAndPassword } from '../utils/firebaseHelper'
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { child, getDatabase, ref, set } from 'firebase/database';
 
-const RegisterScreen = ({ setIsLoggedIn }) => {
-    const navigation = useNavigation();
-    const dispatch = useDispatch();
-
-    const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState({
-        fullName: '',
-        email: '',
-        password: '',
-        confirmPassword: ''
-    });
-    const [visibility, setVisibility] = useState({
-        password: false,
-        confirmPassword: false
-    });
-    const [errors, setErrors] = useState({
-        email: '',
-        password: '',
-        confirmPassword: ''
-    });
-
-    const validateEmail = (email) => {
-        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-        setErrors((prev) => ({
-            ...prev,
-            email: emailRegex.test(email) ? '' : 'Please enter a valid email address'
-        }));
-    };
-
-    const validatePassword = (password) => {
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
-        setErrors((prev) => ({
-            ...prev,
-            password: passwordRegex.test(password)
-                ? ''
-                : 'Password must be at least 6 characters and contain a number, lowercase and uppercase letter'
-        }));
-    };
-
-    const validateConfirmPassword = (confirmPassword) => {
-        setErrors((prev) => ({
-            ...prev,
-            confirmPassword: confirmPassword === formData.password ? '' : 'Passwords do not match'
-        }));
-    };
-
-    const handleInputChange = (field, value) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
-        if (field === 'email') validateEmail(value);
-        if (field === 'password') validatePassword(value);
-        if (field === 'confirmPassword') validateConfirmPassword(value);
-    };
-
-    const createUser = async (fullName, email, userId) => {
-        const userData = {
-            fullName,
-            email,
-            userId,
-            signUpDate: new Date().toISOString()
-        };
-        const dbRef = ref(getDatabase());
-        const childRef = child(dbRef, `users/${userId}`);
-        await set(childRef, userData);
-        return userData;
-    };
+const RegisterScreen = ({ navigation, setIsLoggedIn }) => {
+    const [fullName, setFullName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleRegister = async () => {
-        if (!formData.fullName || !formData.email || !formData.password || !formData.confirmPassword) {
-            Alert.alert('Error', 'Please fill in all fields');
+        console.log("Register button clicked");
+
+        if (!fullName.trim() || !email.trim() || !password || !confirmPassword) {
+            Alert.alert('Error', 'All fields are required');
             return;
         }
-        if (errors.email || errors.password || errors.confirmPassword) {
-            Alert.alert('Error', 'Please fix the errors before submitting');
+        if (password.length < 8) {
+            Alert.alert('Error', 'Password must be at least 8 characters long');
+            return;
+        }
+        if (password !== confirmPassword) {
+            Alert.alert('Error', 'Passwords do not match');
             return;
         }
 
         setLoading(true);
+        console.log("Starting Firebase registration...");
+
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-            const user = userCredential.user;
-            await createUser(formData.fullName, formData.email, user.uid);
-            const idToken = await user.getIdToken();
-            await AsyncStorage.setItem('idToken', idToken);
-            dispatch(login({ fullName: formData.fullName, email: user.email, uid: user.uid }));
-            Alert.alert('Success', 'User registered successfully!');
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            console.log("User registered:", userCredential);
+
+            if (!userCredential.user) {
+                throw new Error("User registration failed");
+            }
+
+            const idToken = await userCredential.user.getIdToken(); // FIXED!
+            const refreshToken = userCredential.user.refreshToken;
+            const userId = userCredential.user.uid;
+            const userEmail = userCredential.user.email;
+
+            console.log("Saving tokens to AsyncStorage...");
+
+            await Promise.all([
+                AsyncStorage.setItem('userToken', idToken),
+                AsyncStorage.setItem('refreshToken', refreshToken),
+                AsyncStorage.setItem('userId', userId),
+                AsyncStorage.setItem('userEmail', userEmail)
+            ]);
+
+            console.log("User successfully logged in!");
             setIsLoggedIn(true);
+
+            // Debug AsyncStorage storage
+            const storedToken = await AsyncStorage.getItem('userToken');
+            console.log("Stored userToken:", storedToken);
+
         } catch (error) {
-            console.error(error);
-            Alert.alert('Registration Error', error.message);
+            console.error("Firebase Error:", error);
+
+            let errorMessage = 'Registration failed. Please try again.';
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessage = 'This email is already in use. Please use a different one.';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = 'Invalid email format. Please enter a valid email.';
+            } else if (error.code === 'auth/weak-password') {
+                errorMessage = 'Weak password. Please use at least 8 characters with letters & numbers.';
+            }
+            Alert.alert('Error', errorMessage);
         } finally {
+            console.log("Finished registration process");
             setLoading(false);
         }
     };
 
+
     return (
-        <KeyboardAvoidingView
-            style={styles.container}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <View style={styles.inner}>
-                    <LinearGradient colors={['#007BFF', '#0056D2']} style={styles.header}>
-                        <Animatable.Image
-                            animation="fadeInDown"
-                            duration={1000}
-                            source={loginIntersection}
-                            style={styles.image}
-                        />
-                        <Animatable.Text animation="fadeInUp" duration={1000} style={styles.title}>
-                            Welcome!
-                        </Animatable.Text>
-                        <Animatable.Text animation="fadeInUp" duration={1000} style={styles.subtitle}>
-                            Create an account to get started
-                        </Animatable.Text>
-                    </LinearGradient>
-                    <ScrollView contentContainerStyle={styles.scrollContent}>
-                        <View style={styles.formSection}>
-                            {['fullName', 'email', 'password', 'confirmPassword'].map((field, index) => (
-                                <Animatable.View key={field} animation="fadeInUp" duration={1000} delay={index * 200}>
-                                    <InputComponent
-                                        label={field === 'fullName' ? 'Full Name' : field.charAt(0).toUpperCase() + field.slice(1)}
-                                        placeholder={`Enter your ${field === 'fullName' ? 'full name' : field}`}
-                                        iconName={field === 'email' ? 'email' : field === 'password' ? 'password' : 'lock'}
-                                        value={formData[field]}
-                                        onChangeText={(value) => handleInputChange(field, value)}
-                                        secureTextEntry={field.includes('password') && !visibility[field]}
-                                        errorMessage={errors[field]}
-                                        onRightIconPress={() => setVisibility((prev) => ({ ...prev, [field]: !prev[field] }))}
-                                    />
-                                </Animatable.View>
-                            ))}
-                            <Animatable.View animation="fadeInUp" duration={1000} delay={1200}>
-                                <TouchableOpacity
-                                    style={styles.registerButton}
-                                    onPress={handleRegister}
-                                    disabled={loading}
-                                >
-                                    <LinearGradient colors={['#007BFF', '#0056D2']} style={styles.gradient}>
-                                        {loading ? (
-                                            <ActivityIndicator size="small" color="#fff" />
-                                        ) : (
-                                            <Text style={styles.registerButtonText}>Register</Text>
-                                        )}
-                                    </LinearGradient>
-                                </TouchableOpacity>
-                            </Animatable.View>
-                            <Animatable.View animation="fadeInUp" duration={1000} delay={1400} style={styles.signupPrompt}>
-                                <Text style={styles.signupText}>Already have an account?</Text>
-                                <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')}>
-                                    <Text style={styles.signupLink}> Log In</Text>
-                                </TouchableOpacity>
-                            </Animatable.View>
-                        </View>
-                    </ScrollView>
-                </View>
-            </TouchableWithoutFeedback>
-        </KeyboardAvoidingView>
+        <View style={styles.container}>
+            <Text style={styles.title}>Create Account</Text>
+
+            <TextInput
+                style={styles.input}
+                placeholder="Full Name"
+                value={fullName}
+                onChangeText={setFullName}
+            />
+
+            <TextInput
+                style={styles.input}
+                placeholder="Email"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+            />
+
+            <View style={styles.passwordContainer}>
+                <TextInput
+                    style={styles.passwordInput}
+                    placeholder="Password"
+                    secureTextEntry={!showPassword}
+                    value={password}
+                    onChangeText={setPassword}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                    <Ionicons name={showPassword ? "eye-off" : "eye"} size={22} color="gray" />
+                </TouchableOpacity>
+            </View>
+
+            <View style={styles.passwordContainer}>
+                <TextInput
+                    style={styles.passwordInput}
+                    placeholder="Confirm Password"
+                    secureTextEntry={!showPassword}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                    <Ionicons name={showPassword ? "eye-off" : "eye"} size={22} color="gray" />
+                </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity style={styles.button} onPress={handleRegister}>
+                <Text style={styles.buttonText}>Sign Up</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')}>
+                <Text style={styles.loginText}>Already have an account? Log in</Text>
+            </TouchableOpacity>
+        </View>
     );
 };
-
-export default RegisterScreen;
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
-    },
-    inner: {
-        flex: 1,
-    },
-    header: {
-        paddingVertical: 40,
-        paddingHorizontal: 20,
-        alignItems: 'center',
         justifyContent: 'center',
-        borderBottomLeftRadius: 30,
-        borderBottomRightRadius: 30,
-        overflow: 'hidden',
-    },
-    image: {
-        width: 100,
-        height: 80,
-        marginBottom: 10,
+        alignItems: 'center',
+        padding: 20,
+        backgroundColor: '#f8f9fa',
     },
     title: {
-        fontSize: 28,
+        fontSize: 24,
         fontWeight: 'bold',
-        color: '#fff',
+        marginBottom: 20,
+        color: '#333',
     },
-    subtitle: {
-        fontSize: 16,
-        color: '#fff',
+    input: {
+        width: '100%',
+        height: 50,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 10,
+        paddingHorizontal: 15,
+        backgroundColor: '#fff',
+        marginBottom: 10,
     },
-    scrollContent: {
-        padding: 15,
-    },
-    formSection: {
-        marginTop: 0,
-    },
-    registerButton: {
-        marginTop: 10,
-        borderRadius: 25,
-        overflow: 'hidden',
-    },
-    gradient: {
-        paddingVertical: 15,
+    passwordContainer: {
+        flexDirection: 'row',
         alignItems: 'center',
-        borderRadius: 25,
+        width: '100%',
+        height: 50,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 10,
+        paddingHorizontal: 15,
+        backgroundColor: '#fff',
+        marginBottom: 10,
     },
-    registerButtonText: {
+    passwordInput: {
+        flex: 1,
+    },
+    button: {
+        backgroundColor: '#007bff',
+        paddingVertical: 12,
+        width: '100%',
+        borderRadius: 10,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    buttonText: {
         color: '#fff',
         fontSize: 18,
-        fontWeight: '600',
-    },
-    signupPrompt: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        paddingBottom: 50,
-        marginTop: 20
-    },
-    signupText: {
-        fontSize: 14,
-        color: '#000',
-    },
-    signupLink: {
-        fontSize: 14,
-        color: '#007BFF',
         fontWeight: 'bold',
     },
+    loginText: {
+        marginTop: 15,
+        color: '#007bff',
+        fontSize: 16,
+    },
 });
+
+export default RegisterScreen;

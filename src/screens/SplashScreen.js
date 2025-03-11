@@ -1,34 +1,72 @@
-import { View, Text, Image, StyleSheet, Animated } from 'react-native';
-import React, { useEffect, useRef } from 'react';
-import { logo, travello } from '../assets/images';
+import { View, Text, Image, StyleSheet, Animated, Easing } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import { logo } from '../assets/images';
 
 const SplashScreen = () => {
     const navigation = useNavigation();
+    const [isLoggedIn, setIsLoggedIn] = useState(null);
+
     const fadeAnim = useRef(new Animated.Value(0)).current;
+    const scaleAnim = useRef(new Animated.Value(0.8)).current;
     const progressAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-        }).start();
-        Animated.timing(progressAnim, {
-            toValue: 1,
-            duration: 3000,
-            useNativeDriver: false,
-        }).start();
+        const checkUserToken = async () => {
+            try {
+                const token = await AsyncStorage.getItem('userToken');
+                if (token) {
+                    setIsLoggedIn(true);
+                } else {
+                    setIsLoggedIn(false);
+                }
+            } catch (error) {
+                console.error('Error fetching user token:', error);
+                setIsLoggedIn(false);
+            }
+        };
+
+        checkUserToken();
+    }, []);
+
+    useEffect(() => {
+        Animated.sequence([
+            Animated.parallel([
+                Animated.timing(fadeAnim, {
+                    toValue: 1,
+                    duration: 1000,
+                    easing: Easing.ease,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(scaleAnim, {
+                    toValue: 1,
+                    duration: 1000,
+                    easing: Easing.out(Easing.exp),
+                    useNativeDriver: true,
+                }),
+            ]),
+            Animated.timing(progressAnim, {
+                toValue: 1,
+                duration: 2000,
+                useNativeDriver: false,
+            }),
+        ]).start();
+
         const timer = setTimeout(() => {
-            navigation.navigate('WelcomeScreen');
-        }, 3000);
+            if (isLoggedIn === true) {
+                navigation.replace('HomeScreen');
+            } else if (isLoggedIn === false) {
+                navigation.replace('WelcomeScreen');
+            }
+        }, 2500);
 
         return () => clearTimeout(timer);
-    }, [navigation, fadeAnim, progressAnim]);
+    }, [navigation, isLoggedIn, fadeAnim, scaleAnim, progressAnim]);
 
     return (
         <View style={styles.container}>
-            <Animated.View style={{ opacity: fadeAnim }}>
+            <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
                 <Image source={logo} style={styles.logo} resizeMode="contain" />
             </Animated.View>
             <Text style={styles.appName}>WanderChat</Text>
@@ -55,25 +93,24 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#1A1A2E',
-
+        backgroundColor: '#004D40',
     },
     logo: {
         width: 110,
         height: 120,
-        marginBottom: 20,
     },
     appName: {
         fontSize: 32,
         fontWeight: 'bold',
         color: '#FFFFFF',
         fontFamily: 'Poppins-Bold', 
+        marginTop: 10,
     },
     tagline: {
         fontSize: 16,
         color: 'rgba(255, 255, 255, 0.8)',
         fontFamily: 'Poppins-Regular',
-        marginTop: 10,
+        marginBottom: 20,
     },
     progressBarContainer: {
         position: 'absolute',
