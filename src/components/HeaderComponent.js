@@ -1,49 +1,55 @@
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useNavigation } from '@react-navigation/native';
 
-const HeaderComponent = ({ title, onBackPress }) => {
+const HeaderComponent = ({
+    title,
+    leftIcon = "arrow-back", // Default left icon
+    onLeftPress,
+    rightIcon = "settings", // Default right icon
+    onRightPress
+}) => {
+    const navigation = useNavigation();
+
     return (
-        <View style={styles.header}>
-            <View style={styles.leftSection}>
-                <MaterialIcons name="arrow-back" size={24} color="#fff" onPress={onBackPress} />
-                <Text style={styles.headerTitle}>{title}</Text>
-            </View>
-            <View style={styles.headerIcons}>
-                <MaterialIcons name="search" size={24} color="#fff" style={styles.icon} />
-                <MaterialIcons name="more-vert" size={24} color="#fff" />
-            </View>
+        <View style={styles.container}>
+            {/* Left Icon */}
+            <TouchableOpacity onPress={onLeftPress || (() => navigation.goBack())} style={styles.iconContainer}>
+                <MaterialIcons name={leftIcon} size={24} color="white" />
+            </TouchableOpacity>
+
+            {/* Title in Center */}
+            <Text style={styles.title}>{title}</Text>
+
+            {/* Right Icon */}
+            <TouchableOpacity onPress={onRightPress} style={styles.iconContainer}>
+                <MaterialIcons name={rightIcon} size={24} color="white" />
+            </TouchableOpacity>
         </View>
     );
 };
 
-const styles = StyleSheet.create({
-    header: {
-        height: 60,
-        backgroundColor: '#075E54',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 15,
-    },
-    leftSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#fff',
-        marginLeft: 10, // Add some space between the icon and the title
-    },
-    headerIcons: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    icon: {
-        marginRight: 15,
-    },
-});
-
 export default HeaderComponent;
 
+const styles = StyleSheet.create({
+    container: {
+        height: 60,
+        backgroundColor: '#075E54', // WhatsApp-like header color
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 15,
+        elevation: 4,
+    },
+    title: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: 'white',
+        textAlign: 'center',
+        flex: 1, // Centering title properly
+    },
+    iconContainer: {
+        padding: 5,
+    },
+});

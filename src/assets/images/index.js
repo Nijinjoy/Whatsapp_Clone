@@ -4,5 +4,6 @@ import loginIntersection from '../images/loginIntersection/loginIntersection.png
 import registerIntersection from '../images/registerIntersection/registerIntersection.png'
 import travello from '../images/travello/travello.png'
 import welcome from '../images/welcome/welcome.png'
+import email from '../images/email/email.png'
 
-export { wallpaper, logo, loginIntersection, registerIntersection, travello, welcome }
+export { wallpaper, logo, loginIntersection, registerIntersection, travello, welcome, email }

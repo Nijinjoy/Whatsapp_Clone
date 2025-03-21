@@ -61,7 +61,7 @@ const BottomTabs = ({ setIsLoggedIn }) => (
 
 const AuthStack = ({ setIsLoggedIn }) => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="SplashScreen" component={SplashScreen} />
+        {/* <Stack.Screen name="SplashScreen" component={SplashScreen} /> */}
         <Stack.Screen name="RegisterScreen">
             {(props) => <RegisterScreen {...props} setIsLoggedIn={setIsLoggedIn} />}
         </Stack.Screen>
@@ -87,28 +87,35 @@ const MainAppStack = ({ setIsLoggedIn }) => (
 );
 
 const Routes = () => {
-    const [isLoggedIn, setIsLoggedIn] = useState(null); // `null` means checking for token
-    const [isLoading, setIsLoading] = useState(true); // Loading state
+    const [isLoggedIn, setIsLoggedIn] = useState(null);
+    const [isLoading, setIsLoading] = useState(true); 
 
     useEffect(() => {
         const checkLoginStatus = async () => {
             try {
                 const userToken = await AsyncStorage.getItem('userToken');
-                setIsLoggedIn(!!userToken); // If token exists, set `true`; otherwise, `false`
+                setIsLoggedIn(!!userToken);
             } catch (error) {
                 console.error("Error checking user token:", error);
                 setIsLoggedIn(false);
             } finally {
-                setIsLoading(false); // Stop loading after token check
+                setIsLoading(false);
             }
         };
-
         checkLoginStatus();
     }, []);
 
+    if (isLoading) {
+        return <SplashScreen />;
+    }
+
     return (
         <NavigationContainer>
-            {isLoggedIn ? <MainAppStack setIsLoggedIn={setIsLoggedIn} /> : <AuthStack setIsLoggedIn={setIsLoggedIn} />}
+            {isLoggedIn ? (
+                <MainAppStack setIsLoggedIn={setIsLoggedIn} />
+            ) : (
+                <AuthStack setIsLoggedIn={setIsLoggedIn} />
+            )}
         </NavigationContainer>
     );
 };

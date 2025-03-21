@@ -1,143 +1,187 @@
 import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Keyboard,
-    TouchableWithoutFeedback,
+    View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator,
+    Image,
+    ScrollView
 } from 'react-native';
-import { Ionicons, FontAwesome } from '@expo/vector-icons';
-import * as Google from 'expo-auth-session/providers/google';
-import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { email } from '../assets/images';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../utils/firebaseHelper';
+import { storeTokens } from '../utils/storageHelper';
 
-const InputField = ({ icon, placeholder, secureTextEntry, value, onChangeText, toggleSecure }) => (
-    <View style={styles.inputWrapper}>
-        <Ionicons name={icon} size={20} color="#aaa" style={styles.icon} />
-        <TextInput
-            style={styles.input}
-            placeholder={placeholder}
-            placeholderTextColor="#aaa"
-            secureTextEntry={secureTextEntry}
-            value={value}
-            onChangeText={onChangeText}
-        />
-        {toggleSecure && (
-            <TouchableOpacity onPress={toggleSecure}>
-                <Ionicons name={secureTextEntry ? 'eye-outline' : 'eye-off-outline'} size={20} color="#aaa" />
-            </TouchableOpacity>
-        )}
-    </View>
-);
+const LoginScreen = ({ navigation, setIsLoggedIn }) => {
+    const [form, setForm] = useState({ fullName: '', email: '', password: '', confirmPassword: '' });
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-const SocialButton = ({ icon, text, onPress, color }) => (
-    <TouchableOpacity style={[styles.socialButton, { backgroundColor: color }]} onPress={onPress}>
-        <FontAwesome name={icon} size={20} color="#fff" />
-        <Text style={styles.socialButtonText}>{text}</Text>
-    </TouchableOpacity>
-);
+    const handleChange = (name, value) => {
+        setForm(prev => ({ ...prev, [name]: value }));
+    };
 
-const LoginScreen = () => {
-    const navigation = useNavigation();
-    const [passwordVisible, setPasswordVisible] = useState(false);
-    const [request, response, promptAsync] = Google.useAuthRequest({
-        androidClientId: 'YOUR_ANDROID_CLIENT_ID',
-        iosClientId: 'YOUR_IOS_CLIENT_ID',
-        expoClientId: 'YOUR_EXPO_CLIENT_ID',
-    });
-
-    const handleGoogleLogin = async () => {
-        const result = await promptAsync();
-        if (result?.type === 'success') console.log('Google Login Success:', result);
+    const handleLogin = async (navigation) => {
+        if (!form.email || !form.password) {
+            Alert.alert("Error", "Please enter both email and password.");
+            return;
+        }
+        setLoading(true);
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, form.email, form.password);
+            const user = userCredential.user;
+            console.log("Logged in user:", user);
+            const idToken = await user.getIdToken();
+            const refreshToken = user.stsTokenManager.refreshToken;
+            const uid = user.uid;
+            const userEmail = user.email;
+            await storeTokens(idToken, refreshToken, uid, userEmail);
+            setIsLoggedIn(true);
+            Alert.alert("Success", "Login Successful!");
+        } catch (error) {
+            Alert.alert("Login Failed", error.message);
+        }
+        setLoading(false);
     };
 
     return (
-        <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <View style={styles.inner}>
-                    <ScrollView contentContainerStyle={styles.scrollContent}>
-                        <View style={styles.formSection}>
-                            <Text style={styles.formTitle}>Login to your account</Text>
-                            <InputField icon="mail-outline" placeholder="Email" />
-                            <InputField
-                                icon="lock-closed-outline"
-                                placeholder="Password"
-                                secureTextEntry={!passwordVisible}
-                                toggleSecure={() => setPasswordVisible(!passwordVisible)}
-                            />
-                            <TouchableOpacity style={styles.loginButton}>
-                                <Text style={styles.loginButtonText}>Log In</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity>
-                                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                            </TouchableOpacity>
-                            <Text style={styles.orText}>OR</Text>
-                            <SocialButton icon="google" text="Sign in with Google" onPress={handleGoogleLogin} color="#DB4437" />
-                        </View>
-                    </ScrollView>
-                    <View style={styles.signupPrompt}>
-                        <Text style={styles.signupText}>Don't have an account?</Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('RegisterScreen')}>
-                            <Text style={styles.signupLink}> Sign Up</Text>
-                        </TouchableOpacity>
-                    </View>
+        <LinearGradient colors={["#6a11cb", "#2575fc"]} style={styles.container}>
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
+                <View style={styles.imageContainer}>
+                    <Image source={email} style={styles.emailImage} resizeMode="contain" />
                 </View>
-            </TouchableWithoutFeedback>
-        </KeyboardAvoidingView>
+                <Text style={styles.title}>Sign in to Continue</Text>
+                <View style={styles.inputContainer}>
+                    <Ionicons name="mail-outline" size={20} color="#666" style={styles.icon} />
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Email"
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        placeholderTextColor="#999"
+                        value={form.email}
+                        onChangeText={(value) => handleChange("email", value)}
+                    />
+                </View>
+
+                <View style={styles.inputContainer}>
+                    <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.icon} />
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Password"
+                        placeholderTextColor="#999"
+                        secureTextEntry={!showPassword}
+                        value={form.password}
+                        onChangeText={(value) => handleChange("password", value)}
+                    />
+                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                        <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={22} color="#666" />
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.inputContainer}>
+                    <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.icon} />
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Confirm Password"
+                        placeholderTextColor="#999"
+                        secureTextEntry={!showConfirmPassword}
+                        value={form.confirmPassword}
+                        onChangeText={(value) => handleChange("confirmPassword", value)}
+                    />
+                    <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                        <Ionicons name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} size={22} color="#666" />
+                    </TouchableOpacity>
+                </View>
+
+                <View style={{ width: "100%", alignItems: "center" }}>
+                    <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
+                        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Login </Text>}
+                    </TouchableOpacity>
+                </View>
+                <TouchableOpacity onPress={() => navigation.navigate("RegisterScreen")}>
+                    <Text style={styles.loginText}>
+                        Already have an account? <Text style={styles.loginLink}>Log in</Text>
+                    </Text>
+                </TouchableOpacity>
+            </ScrollView>
+        </LinearGradient>
     );
 };
 
-export default LoginScreen;
-
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F5F5F5' },
-    inner: { flex: 1 },
-    formSection: { marginTop: 20, paddingHorizontal: 20 },
-    scrollContent: { paddingBottom: 40 },
-    formTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 20, color: '#333' },
-    inputWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        borderWidth: 1,
-        borderColor: '#ddd',
+    container: {
+        flex: 1,
+    },
+    scrollContainer: {
+        flexGrow: 1,
+        justifyContent: "center",
+        padding: 20,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: "bold",
+        color: "#fff",
+        textAlign: "center",
+        marginBottom: 20,
+        textShadowColor: "rgba(0, 0, 0, 0.3)",
+        textShadowOffset: { width: 2, height: 2 },
+        textShadowRadius: 5,
+    },
+    inputContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#fff",
         borderRadius: 10,
-        paddingHorizontal: 10,
+        paddingHorizontal: 15,
         marginBottom: 15,
+        shadowColor: "#000",
+        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 3 },
+        elevation: 3,
     },
-    icon: { marginRight: 10 },
-    input: { flex: 1, height: 50, fontSize: 16, color: '#333' },
-    loginButton: {
-        backgroundColor: '#007BFF',
-        paddingVertical: 15,
-        borderRadius: 10,
-        alignItems: 'center',
+    icon: {
+        marginRight: 10,
+    },
+    input: {
+        flex: 1,
+        height: 50,
+        color: "#333",
+    },
+    button: {
+        width: "100%",
+        padding: 15,
+        backgroundColor: 'red',
+        borderRadius: 8,
+        alignItems: "center",
+        justifyContent: "center",
         marginTop: 20,
-        elevation: 2,
     },
-    loginButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-    forgotPasswordText: { marginTop: 15, fontSize: 14, color: '#007BFF', textAlign: 'center' },
-    orText: { textAlign: 'center', marginVertical: 20, fontSize: 14, fontWeight: 'bold', color: '#555' },
-    socialButton: {
-        flexDirection: 'row',
-        paddingVertical: 12,
-        borderRadius: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
+
+    buttonText: {
+        color: "#fff",
+        fontSize: 18,
+        fontWeight: "bold",
     },
-    socialButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginLeft: 10 },
-    signupPrompt: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 10,
-        borderTopWidth: 1,
-        borderColor: '#ddd',
+    loginText: {
+        textAlign: "center",
+        color: "white",
+        marginTop: 15,
+        fontSize: 14,
     },
-    signupText: { fontSize: 14, color: '#555' },
-    signupLink: { fontSize: 14, color: '#007BFF', fontWeight: 'bold' },
+    loginLink: {
+        fontWeight: "bold",
+        color: "#ff6b6b",
+    },
+    imageContainer: {
+        alignItems: "center",
+        marginBottom: 20,
+    },
+    emailImage: {
+        width: 200,
+        height: 200,
+    },
+
 });
+
+export default LoginScreen;

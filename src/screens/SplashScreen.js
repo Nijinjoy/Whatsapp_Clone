@@ -4,10 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { logo } from '../assets/images';
 
-const SplashScreen = () => {
-    const navigation = useNavigation();
-    const [isLoggedIn, setIsLoggedIn] = useState(null);
-
+const SplashScreen = ({ setIsLoggedIn }) => {
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const scaleAnim = useRef(new Animated.Value(0.8)).current;
     const progressAnim = useRef(new Animated.Value(0)).current;
@@ -26,22 +23,22 @@ const SplashScreen = () => {
                 setIsLoggedIn(false);
             }
         };
-
         checkUserToken();
     }, []);
+
 
     useEffect(() => {
         Animated.sequence([
             Animated.parallel([
                 Animated.timing(fadeAnim, {
                     toValue: 1,
-                    duration: 1000,
+                    duration: 2000,
                     easing: Easing.ease,
                     useNativeDriver: true,
                 }),
                 Animated.timing(scaleAnim, {
                     toValue: 1,
-                    duration: 1000,
+                    duration: 2000,
                     easing: Easing.out(Easing.exp),
                     useNativeDriver: true,
                 }),
@@ -49,20 +46,11 @@ const SplashScreen = () => {
             Animated.timing(progressAnim, {
                 toValue: 1,
                 duration: 2000,
+                easing: Easing.linear,
                 useNativeDriver: false,
             }),
         ]).start();
-
-        const timer = setTimeout(() => {
-            if (isLoggedIn === true) {
-                navigation.replace('HomeScreen');
-            } else if (isLoggedIn === false) {
-                navigation.replace('WelcomeScreen');
-            }
-        }, 2500);
-
-        return () => clearTimeout(timer);
-    }, [navigation, isLoggedIn, fadeAnim, scaleAnim, progressAnim]);
+    }, []);
 
     return (
         <View style={styles.container}>

@@ -32,7 +32,7 @@ const OnboardingScreen = ({ navigation }) => {
         <View style={{ flex: 1 }}>
             <TouchableOpacity
                 style={styles.skipButton}
-                onPress={() => navigation.replace('LoginScreen')}
+                onPress={() => navigation.replace('RegisterScreen')}
             >
                 <Text style={styles.skipText}>Skip</Text>
             </TouchableOpacity>

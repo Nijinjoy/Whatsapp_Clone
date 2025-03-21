@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useState } from "react";
 import {
     View,
     Text,
@@ -6,144 +6,92 @@ import {
     Image,
     TouchableOpacity,
     StyleSheet,
+    Alert,
     StatusBar,
-    Animated,
-} from 'react-native';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { Swipeable } from 'react-native-gesture-handler';
-
-const chatData = [
-    {
-        id: '1',
-        name: 'John Doe',
-        lastMessage: 'Hey, how are you?',
-        time: '12:30 PM',
-        avatar: 'https://randomuser.me/api/portraits/men/1.jpg',
-        unread: true,
-    },
-    {
-        id: '2',
-        name: 'Jane Smith',
-        lastMessage: 'Let’s catch up tomorrow.',
-        time: '11:45 AM',
-        avatar: 'https://randomuser.me/api/portraits/women/2.jpg',
-        unread: false,
-    },
-    {
-        id: '3',
-        name: 'Alex Johnson',
-        lastMessage: 'Got it. Thanks!',
-        time: '10:15 AM',
-        avatar: 'https://randomuser.me/api/portraits/men/3.jpg',
-        unread: true,
-    },
-    {
-        id: '4',
-        name: 'Emily Davis',
-        lastMessage: 'See you soon!',
-        time: '09:30 AM',
-        avatar: 'https://randomuser.me/api/portraits/women/4.jpg',
-        unread: false,
-    },
-    {
-        id: '5',
-        name: 'Michael Brown',
-        lastMessage: 'Sounds good!',
-        time: '08:15 AM',
-        avatar: 'https://randomuser.me/api/portraits/men/5.jpg',
-        unread: false,
-    },
-];
+} from "react-native";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import { database } from "../utils/firebaseHelper";
+import { ref, onValue, push, set, remove } from "firebase/database";
 
 const ChatlistScreen = ({ navigation }) => {
-    const swipeableRefs = useRef({});
+    const [chatData, setChatData] = useState([]);
+
+    useEffect(() => {
+        const chatListRef = ref(database, "chats/");
+        const unsubscribe = onValue(chatListRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                const chatsArray = Object.keys(data).map((key) => ({
+                    id: key,
+                    name: data[key].name,
+                    avatar: data[key].avatar,
+                    lastMessage: data[key].lastMessage || "No messages yet",
+                    lastMessageTime: data[key].lastMessageTime || 0,
+                }));
+                chatsArray.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+
+                setChatData(chatsArray);
+            }
+        });
+        return () => unsubscribe();
+    }, []);
 
     const handleChatNavigation = (chat) => {
-        navigation.navigate('ChatScreen', { chat });
+        navigation.navigate("ChatScreen", {
+            chatId: chat.id,
+            chatName: chat.name
+        }, { animationEnabled: false });
+
     };
 
-    const renderRightActions = (progress, dragX, item) => {
-        const scale = dragX.interpolate({
-            inputRange: [-150, 0],
-            outputRange: [1, 0.8],
-            extrapolate: 'clamp',
-        });
+    const createNewChat = () => {
+        const newChatRef = push(ref(database, "chats/"));
+        const newChat = {
+            name: "New Chat",
+            lastMessage: "",
+            avatar: "https://i.pravatar.cc/150?img=5",
+            messages: [],
+        };
+        set(newChatRef, newChat);
+        navigation.navigate("ChatScreen", { chatId: newChatRef.key, chatName: newChat.name });
+    };
 
-        const opacity = dragX.interpolate({
-            inputRange: [-150, 0],
-            outputRange: [1, 0],
-            extrapolate: 'clamp',
-        });
+    const formatDateTime = (timestamp) => {
+        if (!timestamp) return "No messages yet";
+        const correctedTimestamp = timestamp.toString().length === 10 ? timestamp * 1000 : timestamp;
+        const date = new Date(correctedTimestamp);
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
 
-        return (
-            <View style={styles.actionsContainer}>
-                <Animated.View style={{ transform: [{ scale }], opacity }}>
-                    <TouchableOpacity
-                        style={[styles.actionButton, styles.editButton]}
-                        onPress={() => handleEdit(item)}
-                    >
-                        <View style={styles.buttonContent}>
-                            <MaterialIcons name="edit" size={24} color="#fff" />
-                            <Text style={styles.actionText}>Edit</Text>
-                        </View>
-                    </TouchableOpacity>
-                </Animated.View>
-                <Animated.View style={{ transform: [{ scale }], opacity }}>
-                    <TouchableOpacity
-                        style={[styles.actionButton, styles.deleteButton]}
-                        onPress={() => handleDelete(item.id)}
-                    >
-                        <View style={styles.buttonContent}>
-                            <MaterialIcons name="delete" size={24} color="#fff" />
-                            <Text style={styles.actionText}>Delete</Text>
-                        </View>
-                    </TouchableOpacity>
-                </Animated.View>
-            </View>
+        if (date.toDateString() === today.toDateString()) {
+            return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
+        } else if (date.toDateString() === yesterday.toDateString()) {
+            return "Yesterday";
+        } else {
+            return date.toLocaleDateString("en-GB");
+        }
+    };
+
+    const deleteChat = (chatId) => {
+        Alert.alert(
+            "Delete Chat",
+            "Are you sure you want to permanently delete this chat?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: () => {
+                        remove(ref(database, `chats/${chatId}`)) // Delete from Firebase
+                            .then(() => console.log("Chat deleted successfully"))
+                            .catch((error) => console.error("Error deleting chat:", error));
+                    },
+                },
+            ]
         );
     };
 
-    const handleEdit = (item) => {
-        alert(`Editing chat: ${item.name}`);
-    };
-
-    const handleDelete = (id) => {
-        alert(`Deleting chat with ID: ${id}`);
-    };
-
-    const renderChatItem = ({ item }) => (
-        <Swipeable
-            ref={(ref) => (swipeableRefs.current[item.id] = ref)}
-            renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item)}
-            onSwipeableWillOpen={() => {
-                Object.keys(swipeableRefs.current).forEach((key) => {
-                    if (key !== item.id && swipeableRefs.current[key]) {
-                        swipeableRefs.current[key].close();
-                    }
-                });
-            }}
-            friction={2}
-            overshootFriction={8}
-        >
-            <TouchableOpacity
-                style={styles.chatItem}
-                onPress={() => handleChatNavigation(item)}
-                activeOpacity={0.7}
-            >
-                <Image source={{ uri: item.avatar }} style={styles.avatar} />
-                <View style={styles.chatInfo}>
-                    <Text style={styles.chatName}>{item.name}</Text>
-                    <Text style={styles.chatMessage} numberOfLines={1}>
-                        {item.lastMessage}
-                    </Text>
-                </View>
-                <View style={styles.timeUnreadContainer}>
-                    <Text style={styles.chatTime}>{item.time}</Text>
-                    {item.unread && <View style={styles.unreadBadge} />}
-                </View>
-            </TouchableOpacity>
-        </Swipeable>
-    );
 
     return (
         <View style={styles.container}>
@@ -152,7 +100,7 @@ const ChatlistScreen = ({ navigation }) => {
                 <Text style={styles.headerTitle}>Chats</Text>
                 <View style={styles.headerIcons}>
                     <TouchableOpacity>
-                        <MaterialIcons name="search" size={24} color="#fff" style={styles.icon} />
+                        <MaterialIcons name="search" size={24} color="#fff" />
                     </TouchableOpacity>
                     <TouchableOpacity>
                         <MaterialIcons name="more-vert" size={24} color="#fff" />
@@ -162,9 +110,27 @@ const ChatlistScreen = ({ navigation }) => {
             <FlatList
                 data={chatData}
                 keyExtractor={(item) => item.id}
-                renderItem={renderChatItem}
-                contentContainerStyle={styles.chatList}
+                renderItem={({ item }) => (
+                    <TouchableOpacity
+                        style={styles.chatItem}
+                        onPress={() => handleChatNavigation(item)}
+                        onLongPress={() => deleteChat(item.id)}
+                    >
+                        <Image source={{ uri: item.avatar }} style={styles.avatar} />
+                        <View style={styles.chatInfo}>
+                            <Text style={styles.chatName}>{item.name}</Text>
+                            <Text style={styles.chatMessage} numberOfLines={1}>
+                                {item.lastMessage || "No messages yet"}
+                            </Text>
+                        </View>
+                        <Text style={styles.chatTime}>{formatDateTime(item.lastMessageTime)}</Text>
+                    </TouchableOpacity>
+                )}
             />
+
+            <TouchableOpacity style={styles.newChatButton} onPress={createNewChat}>
+                <MaterialIcons name="add" size={30} color="#fff" />
+            </TouchableOpacity>
         </View>
     );
 };
@@ -172,113 +138,68 @@ const ChatlistScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: "#ECE5DD",
     },
     header: {
-        height: 60,
-        backgroundColor: '#075E54',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        height: 80,
+        backgroundColor: "#075E54",
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
         paddingHorizontal: 15,
-        elevation: 4,
     },
     headerTitle: {
         fontSize: 20,
-        fontWeight: 'bold',
-        color: '#fff',
+        fontWeight: "bold",
+        color: "#fff",
     },
     headerIcons: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    icon: {
-        marginRight: 15,
-    },
-    chatList: {
-        paddingVertical: 10,
+        flexDirection: "row",
     },
     chatItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 15,
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#fff",
         paddingVertical: 12,
-        marginHorizontal: 10,
-        marginVertical: 5,
-        backgroundColor: '#fff',
-        borderRadius: 10,
-        elevation: 2,
+        paddingHorizontal: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: "#ddd",
     },
     avatar: {
         width: 50,
         height: 50,
         borderRadius: 25,
-        marginRight: 15,
     },
     chatInfo: {
         flex: 1,
+        marginLeft: 15,
     },
     chatName: {
         fontSize: 16,
-        fontWeight: '600',
-        color: '#333',
+        fontWeight: "bold",
     },
     chatMessage: {
         fontSize: 14,
-        color: '#666',
-        marginTop: 4,
+        color: "#666",
     },
-    timeUnreadContainer: {
-        alignItems: 'flex-end',
+    newChatButton: {
+        position: "absolute",
+        bottom: 80,
+        right: 20,
+        backgroundColor: "#25D366",
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        justifyContent: "center",
+        alignItems: "center",
+        elevation: 5,
     },
     chatTime: {
         fontSize: 12,
-        color: '#888',
+        color: "#666",
+        alignSelf: "flex-end",
     },
-    unreadBadge: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: '#25D366',
-        marginTop: 4,
-    },
-    actionsContainer: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        margin: 10,
-        alignItems: 'center',
-        marginVertical: 5,
-        borderRadius: 10,
-        overflow: 'hidden',
-    },
-    actionButton: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 80,
-        height: '100%',
-        borderRadius: 10,
-        marginHorizontal: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.8,
-        shadowRadius: 2,
-        elevation: 5,
-    },
-    editButton: {
-        backgroundColor: '#4CAF50',
-    },
-    deleteButton: {
-        backgroundColor: '#F44336',
-    },
-    buttonContent: {
-        alignItems: 'center',
-    },
-    actionText: {
-        color: '#fff',
-        fontSize: 12,
-        marginTop: 4,
-        fontWeight: 'bold',
-    },
+
 });
 
 export default ChatlistScreen;
