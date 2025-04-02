@@ -1,31 +1,13 @@
 import { View, Text, Image, StyleSheet, Animated, Easing } from 'react-native';
-import React, { useEffect, useRef, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
+import React, { useEffect, useRef } from 'react';
 import { logo } from '../assets/images';
+import { useNavigation } from '@react-navigation/native';
 
 const SplashScreen = ({ setIsLoggedIn }) => {
+    const navigation = useNavigation();
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const scaleAnim = useRef(new Animated.Value(0.8)).current;
     const progressAnim = useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
-        const checkUserToken = async () => {
-            try {
-                const token = await AsyncStorage.getItem('userToken');
-                if (token) {
-                    setIsLoggedIn(true);
-                } else {
-                    setIsLoggedIn(false);
-                }
-            } catch (error) {
-                console.error('Error fetching user token:', error);
-                setIsLoggedIn(false);
-            }
-        };
-        checkUserToken();
-    }, []);
-
 
     useEffect(() => {
         Animated.sequence([
@@ -49,7 +31,11 @@ const SplashScreen = ({ setIsLoggedIn }) => {
                 easing: Easing.linear,
                 useNativeDriver: false,
             }),
-        ]).start();
+        ]).start(() => {
+            setTimeout(() => {
+                navigation.replace('RegisterScreen');
+            }, 2000);
+        });
     }, []);
 
     return (
@@ -81,7 +67,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#004D40',
+        backgroundColor: '#1E1E2D', // Main background color (use this everywhere)
     },
     logo: {
         width: 110,
